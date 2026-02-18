@@ -30,16 +30,34 @@ There are hidden surprises scattered throughout — try to find them all! Here a
 
 ## 🚀 Getting Started
 
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- npm (comes with Node.js)
+
+### Setup
+
 ```bash
-# Install dependencies
+# 1. Clone the repo
+git clone https://github.com/aka7shan/spotlight-v1.git
+cd spotlight-v1
+
+# 2. Install dependencies
 npm install
 
-# Start dev server
+# 3. Start dev server
 npx vite
+```
 
-# Build for production
+The app will be running at **http://localhost:5173**
+
+### Build for Production
+
+```bash
 npx vite build
 ```
+
+The output will be in the `dist/` folder — ready to deploy.
 
 ## 📁 Project Structure
 
