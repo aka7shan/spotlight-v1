@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { portfolioData, funFacts } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
+import TechTrivia from '../../games/TechTrivia';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -17,6 +18,7 @@ const suggestedPrompts = [
   '📜 What certifications do you have?',
   '📧 How can I contact you?',
   '🎲 Tell me a fun fact',
+  '🧠 Play tech trivia quiz',
 ];
 
 function generateResponse(input: string): string {
@@ -54,6 +56,11 @@ function generateResponse(input: string): string {
       response += '\n';
     });
     return response;
+  }
+
+  // Quiz/trivia check MUST come before skills (because 'tech trivia' contains 'tech')
+  if (lower.includes('quiz') || lower.includes('trivia') || lower.includes('game') || lower.includes('play')) {
+    return `__TRIGGER_QUIZ__`;
   }
 
   if (lower.includes('skill') || lower.includes('tech') || lower.includes('stack') || lower.includes('language')) {
@@ -108,6 +115,7 @@ export default function GPTTheme() {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showTrivia, setShowTrivia] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -133,6 +141,13 @@ export default function GPTTheme() {
 
     const response = generateResponse(msgText);
     setIsTyping(false);
+
+    if (response === '__TRIGGER_QUIZ__') {
+      setMessages((prev) => [...prev, { role: 'assistant', content: '# 🧠 Tech Trivia Time!\n\nLet me test your knowledge! Launching the quiz now...' }]);
+      setTimeout(() => setShowTrivia(true), 500);
+      return;
+    }
+
     setMessages((prev) => [...prev, { role: 'assistant', content: response }]);
   };
 
@@ -340,6 +355,15 @@ export default function GPTTheme() {
           </p>
         </div>
       </div>
+
+      {/* Trivia overlay */}
+      {showTrivia && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="max-w-lg w-full">
+            <TechTrivia variant="gpt" onExit={() => setShowTrivia(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

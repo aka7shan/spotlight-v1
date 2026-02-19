@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { portfolioData } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
+import TechTrivia from '../../games/TechTrivia';
 
 interface CardItem {
   title: string;
@@ -17,6 +18,7 @@ export default function NetflixTheme() {
   const [showIntro, setShowIntro] = useState(true);
   const [selectedCard, setSelectedCard] = useState<CardItem | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
+  const [showTrivia, setShowTrivia] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowIntro(false), 3000);
@@ -422,6 +424,19 @@ export default function NetflixTheme() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Still Watching? Trivia Button */}
+      <div className="text-center py-8">
+        <button
+          onClick={() => setShowTrivia(true)}
+          className="bg-[#e50914] hover:bg-[#f6121d] text-white font-bold py-3 px-8 rounded cursor-pointer transition-colors text-sm"
+        >
+          🍿 Are You Still Watching? — Take the Tech Quiz!
+        </button>
+      </div>
+
+      {/* Trivia Modal */}
+      {showTrivia && <TechTrivia variant="netflix" onExit={() => setShowTrivia(false)} />}
 
       {/* Footer */}
       <footer className="text-center text-gray-600 text-sm py-8 border-t border-gray-800">
