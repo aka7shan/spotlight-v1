@@ -51,9 +51,9 @@ export interface PortfolioData {
 export const portfolioData: PortfolioData = {
   name: "Akarshan Sharma",
   title: "Software Engineer",
-  phone: "+91-1234567890",
-  email: "akaxyz@gmail.com",
-  linkedin: "linkedin.com/in/akarshan",
+  phone: "+91-6283441238",
+  email: "akarshan915719@gmail.com",
+  linkedin: "https://www.linkedin.com/in/akarshan-sharma-020320208",
   leetcode: "leetcode.com/aka7shan",
   summary:
     "Passionate Software Engineer with expertise in full-stack development, cloud architecture, and building scalable systems. I love turning complex problems into elegant, user-friendly solutions.",
