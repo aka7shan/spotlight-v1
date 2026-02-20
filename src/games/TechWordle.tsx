@@ -253,7 +253,7 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
       for (const l of guess) {
         if (l.char === letter) {
           if (l.status === 'correct') return 'correct';
-          if (l.status === 'present' && best !== 'correct') best = 'present';
+          if (l.status === 'present') best = 'present';
           if (l.status === 'absent' && best === 'empty') best = 'absent';
         }
       }

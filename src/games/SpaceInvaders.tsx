@@ -37,7 +37,7 @@ const COLS = 8;
 export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
+  const [, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [won, setWon] = useState(false);
