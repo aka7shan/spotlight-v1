@@ -3,7 +3,7 @@ import { useStore } from './store/useStore';
 import Landing from './components/Landing/Landing';
 
 import NetflixTheme from './themes/Netflix/NetflixTheme';
-// import TerminalTheme from './themes/Terminal/TerminalTheme';
+import TerminalTheme from './themes/Terminal/TerminalTheme';
 import GPTTheme from './themes/GPT/GPTTheme';
 import InstagramTheme from './themes/Instagram/InstagramTheme';
 // import GameBoyTheme from './themes/GameBoy/GameBoyTheme';
@@ -17,7 +17,7 @@ function App() {
       case 'netflix':
         return <NetflixTheme />;
       case 'terminal':
-        // return <TerminalTheme />;
+        return <TerminalTheme />;
       case 'gpt':
         return <GPTTheme />;
       case 'instagram':
