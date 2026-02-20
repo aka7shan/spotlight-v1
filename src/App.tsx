@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useStore } from './store/useStore';
 import Landing from './components/Landing/Landing';
+
 import NetflixTheme from './themes/Netflix/NetflixTheme';
 import TerminalTheme from './themes/Terminal/TerminalTheme';
 import GPTTheme from './themes/GPT/GPTTheme';
