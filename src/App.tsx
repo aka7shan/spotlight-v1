@@ -6,7 +6,7 @@ import NetflixTheme from './themes/Netflix/NetflixTheme';
 import TerminalTheme from './themes/Terminal/TerminalTheme';
 import GPTTheme from './themes/GPT/GPTTheme';
 import InstagramTheme from './themes/Instagram/InstagramTheme';
-// import GameBoyTheme from './themes/GameBoy/GameBoyTheme';
+import GameBoyTheme from './themes/GameBoy/GameBoyTheme';
 // import StoryTheme from './themes/Story/StoryTheme';
 
 function App() {
@@ -22,8 +22,8 @@ function App() {
         return <GPTTheme />;
       case 'instagram':
         return <InstagramTheme />;
-      // case 'gameboy':
-      //   return <GameBoyTheme />;
+      case 'gameboy':
+        return <GameBoyTheme />;
       // case 'story':
       //   return <StoryTheme />;
       case 'landing':
