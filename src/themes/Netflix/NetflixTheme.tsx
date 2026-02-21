@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { portfolioData } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
@@ -13,7 +14,7 @@ interface CardItem {
 }
 
 export default function NetflixTheme() {
-  const setTheme = useStore((s) => s.setTheme);
+  const navigate = useNavigate();
   const visitSection = useStore((s) => s.visitSection);
   const [showIntro, setShowIntro] = useState(true);
   const [selectedCard, setSelectedCard] = useState<CardItem | null>(null);
@@ -129,7 +130,7 @@ export default function NetflixTheme() {
             <h1
               className="text-2xl md:text-3xl font-black cursor-pointer"
               style={{ color: '#e50914' }}
-              onClick={() => setTheme('landing')}
+              onClick={() => navigate('/')}
             >
               AKARSHAN
             </h1>
@@ -150,7 +151,7 @@ export default function NetflixTheme() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setTheme('landing')}
+              onClick={() => navigate('/')}
               className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
               Switch Theme

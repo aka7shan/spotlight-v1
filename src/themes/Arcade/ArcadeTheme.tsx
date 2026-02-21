@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { portfolioData } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
@@ -46,7 +47,7 @@ const NEON = {
 };
 
 export default function ArcadeTheme() {
-  const setTheme = useStore((s) => s.setTheme);
+  const routerNavigate = useNavigate();
   const visitSection = useStore((s) => s.visitSection);
   const achievements = useStore((s) => s.achievements);
   const xp = useStore((s) => s.xp);
@@ -68,12 +69,12 @@ export default function ArcadeTheme() {
       if (e.key === 'Escape') {
         if (isInGame) setCurrentScreen('games');
         else if (currentScreen !== 'menu') setCurrentScreen('menu');
-        else setTheme('landing');
+        else routerNavigate('/');
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [currentScreen, isInGame, setTheme]);
+  }, [currentScreen, isInGame, routerNavigate]);
 
   const skillStats = [
     { name: 'Java', level: 90, emoji: '☕' },
@@ -347,7 +348,7 @@ export default function ArcadeTheme() {
       {/* Top bar */}
       <div className="relative z-10 shrink-0 px-4 py-3 flex items-center justify-between"
         style={{ background: `${NEON.surface}ee`, borderBottom: `1px solid ${NEON.border}` }}>
-        <button onClick={() => setTheme('landing')} className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer text-sm">
+        <button onClick={() => routerNavigate('/')} className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer text-sm">
           ← Back
         </button>
         <span className="text-xs font-bold tracking-[0.3em]" style={{ color: NEON.cyan, textShadow: `0 0 10px ${NEON.cyan}40` }}>

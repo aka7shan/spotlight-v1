@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { portfolioData, funFacts } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
@@ -106,7 +107,7 @@ function generateResponse(input: string): string {
 }
 
 export default function GPTTheme() {
-  const setTheme = useStore((s) => s.setTheme);
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -208,7 +209,7 @@ export default function GPTTheme() {
       <div className="bg-[#212121] border-b border-gray-700/50 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setTheme('landing')}
+            onClick={() => navigate('/')}
             className="text-gray-400 hover:text-white transition-colors cursor-pointer text-sm"
           >
             ← Back
