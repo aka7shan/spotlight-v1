@@ -212,18 +212,25 @@ export default function PongGame({ variant, onExit }: PongGameProps) {
     return () => cancelAnimationFrame(animRef.current);
   }, [gameStarted, gameOver, isArcade, resetBall, setHighScore]);
 
+  const handleMobileTap = useCallback(() => {
+    if (!gameStarted || gameOver) resetGame();
+  }, [gameStarted, gameOver, resetGame]);
+
   const content = (
     <div
-      className={isArcade ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
+      className={isArcade ? `${isMobile ? 'p-1' : 'p-3'} flex flex-col h-full` : 'flex flex-col'}
       style={!isArcade ? { height: 'calc(100vh - 14rem)' } : undefined}
     >
-      <div className="flex items-center justify-between mb-2 shrink-0">
+      <div className="flex items-center justify-between mb-1 shrink-0 px-2">
         <p className={isArcade ? 'text-cyan-400 text-xs' : 'text-green-400 text-xs'}>— PONG —</p>
         <button onClick={onExit} className={isArcade ? 'text-cyan-300 text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
       </div>
 
-      <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden flex-col gap-3">
-        <div className="relative flex-1 flex items-center justify-center min-h-0 w-full overflow-hidden">
+      <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden flex-col gap-2">
+        <div
+          className="relative flex-1 flex items-center justify-center min-h-0 w-full overflow-hidden"
+          onClick={isMobile && isArcade ? handleMobileTap : undefined}
+        >
           <canvas
             ref={canvasRef}
             width={GAME_W}
@@ -236,7 +243,7 @@ export default function PongGame({ variant, onExit }: PongGameProps) {
             <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'}`}>
               <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>🏓 PONG</p>
               <p className={isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-600'}>You vs AI — First to 5 wins!</p>
-              <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-500'}`}>Press ENTER to start</p>
+              <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-500'}`}>{isArcade && isMobile ? 'Tap to start' : 'Press ENTER to start'}</p>
             </div>
           )}
 
@@ -246,20 +253,20 @@ export default function PongGame({ variant, onExit }: PongGameProps) {
                 {playerScore >= 5 ? '🏆 YOU WIN!' : '💀 AI WINS'}
               </p>
               <p className={isArcade ? 'text-base text-cyan-300' : 'text-sm text-green-400'}>{playerScore} - {aiScore}</p>
-              <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-500'}`}>ENTER to retry • ESC to exit</p>
+              <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-500'}`}>{isArcade && isMobile ? 'Tap to retry' : 'ENTER to retry • ESC to exit'}</p>
             </div>
           )}
         </div>
 
         {isArcade && isMobile && (
-          <div className="flex justify-center shrink-0 py-2">
-            <VirtualJoystick axes="vertical" size={120} />
+          <div className="flex justify-center shrink-0" style={{ height: '90px' }}>
+            <VirtualJoystick axes="vertical" size={80} />
           </div>
         )}
       </div>
 
-      <p className={`text-center mt-2 shrink-0 ${isArcade ? 'text-cyan-400/70 text-xs' : 'text-green-700 text-xs'}`}>
-        {isArcade && isMobile ? 'Joystick to move paddle • ESC to exit' : '↑/↓ or W/S to move • ESC to exit'}
+      <p className={`text-center shrink-0 ${isArcade ? 'text-cyan-400/70 text-xs py-0.5' : 'text-green-700 text-xs mt-2'}`}>
+        {isArcade && isMobile ? 'Tap to start • Joystick to move paddle' : '↑/↓ or W/S to move • ESC to exit'}
       </p>
     </div>
   );

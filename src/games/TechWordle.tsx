@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStore } from '../store/useStore';
+import { useIsMobile } from '../components/TouchControls';
 
 interface TechWordleProps {
   variant: 'arcade' | 'terminal';
@@ -142,8 +143,10 @@ export default function TechWordle({ variant: _variant, onExit }: TechWordleProp
   const [shake, setShake] = useState(false);
   const [message, setMessage] = useState('');
   const [gameStarted, setGameStarted] = useState(false);
-  const [wordMode, setWordMode] = useState<WordMode | null>(null); // null = not chosen yet
+  const [wordMode, setWordMode] = useState<WordMode | null>(null);
   const setHighScore = useStore((s) => s.setHighScore);
+  const isMobile = useIsMobile();
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_GUESSES = 6;
 
@@ -287,6 +290,31 @@ export default function TechWordle({ variant: _variant, onExit }: TechWordleProp
     }
   };
 
+  const handleNativeInput = useCallback((e: React.FormEvent<HTMLInputElement>) => {
+    if (gameOver) return;
+    const val = (e.target as HTMLInputElement).value.toUpperCase();
+    if (val.length <= 5 && /^[A-Z]*$/.test(val)) {
+      setCurrentGuess(val);
+    }
+    (e.target as HTMLInputElement).value = '';
+  }, [gameOver]);
+
+  const handleNativeKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitGuess();
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      setCurrentGuess((g) => g.slice(0, -1));
+    }
+  }, [submitGuess]);
+
+  const focusMobileInput = useCallback(() => {
+    if (isMobile && hiddenInputRef.current) {
+      hiddenInputRef.current.focus();
+    }
+  }, [isMobile]);
+
   return (
     <div
       className="flex flex-col h-full bg-[#121213] text-white"
@@ -344,6 +372,22 @@ export default function TechWordle({ variant: _variant, onExit }: TechWordleProp
 
       {gameStarted && (
         <div className="flex-1 flex flex-col min-h-0 px-4">
+          {/* Hidden input for native mobile keyboard */}
+          {isMobile && (
+            <input
+              ref={hiddenInputRef}
+              type="text"
+              autoCapitalize="characters"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="sr-only"
+              style={{ position: 'fixed', top: -100, left: 0, opacity: 0, width: 1, height: 1 }}
+              onInput={handleNativeInput}
+              onKeyDown={handleNativeKeyDown}
+            />
+          )}
+
           {/* Message area */}
           {message && (
             <div className={`text-center text-sm py-2 shrink-0 ${won ? 'text-[#6aaa64] font-bold' : 'text-gray-400'}`}>
@@ -351,9 +395,10 @@ export default function TechWordle({ variant: _variant, onExit }: TechWordleProp
             </div>
           )}
 
-          {/* Tile grid */}
+          {/* Tile grid — tap to show native keyboard on mobile */}
           <div
             className={`flex flex-col items-center justify-center gap-1.5 flex-1 min-h-0 ${shake ? 'animate-shake' : ''}`}
+            onClick={focusMobileInput}
           >
             {Array.from({ length: MAX_GUESSES }, (_, row) => {
               const guess = guesses[row];
@@ -419,9 +464,15 @@ export default function TechWordle({ variant: _variant, onExit }: TechWordleProp
             ))}
           </div>
 
+          {isMobile && !gameOver && (
+            <p className="text-center py-1 text-gray-500 text-xs shrink-0 animate-pulse">
+              Tap tiles to use phone keyboard
+            </p>
+          )}
+
           {gameOver && (
             <p className="text-center py-2 text-gray-500 text-xs shrink-0">
-              Press ENTER to play again • ESC to exit
+              {isMobile ? 'Tap a mode button above to play again' : 'Press ENTER to play again • ESC to exit'}
             </p>
           )}
         </div>

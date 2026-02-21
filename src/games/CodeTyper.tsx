@@ -159,12 +159,15 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
       )}
 
       {!gameStarted && !gameOver && (
-        <div className={`text-center flex-1 flex flex-col items-center justify-center gap-3 ${isArcade ? '' : ''}`}>
+        <div
+          className={`text-center flex-1 flex flex-col items-center justify-center gap-3`}
+          onClick={isMobile ? startGame : undefined}
+        >
           <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>⌨️ CODE TYPER</p>
           <p className={isArcade ? 'text-gray-400 text-sm mt-2' : 'text-xs text-green-600 mt-2'}>Type code snippets as fast as you can!</p>
           <p className={isArcade ? 'text-gray-400 text-sm mt-1' : 'text-xs text-green-700 mt-1'}>60 seconds on the clock</p>
           <p className={`animate-pulse mt-4 ${isArcade ? 'text-cyan-400 text-sm' : 'text-xs text-green-500'}`}>
-            Press ENTER to start
+            {isMobile ? 'Tap to start' : 'Press ENTER to start'}
           </p>
         </div>
       )}
@@ -179,9 +182,9 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
             <span>ERR: {errors}</span>
           </div>
 
-          {/* Code display */}
+          {/* Code display — tap to focus the hidden input and trigger keyboard */}
           <div
-            className={`border rounded p-3 font-mono whitespace-pre-wrap break-all cursor-text flex-1 ${
+            className={`border rounded p-3 font-mono whitespace-pre-wrap break-all cursor-text flex-1 relative ${
               isArcade
                 ? 'border-cyan-800 bg-[#0a0a1a]/50 text-sm overflow-y-auto'
                 : 'border-green-800 bg-black/50 text-xs min-h-[120px] max-h-[200px] overflow-y-auto'
@@ -189,16 +192,35 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
             onClick={() => inputRef.current?.focus()}
           >
             {renderCodeComparison()}
+            {isMobile && !gameOver && (
+              <div className="absolute bottom-2 right-2 text-[10px] text-gray-500 animate-pulse">
+                Tap here to type
+              </div>
+            )}
           </div>
 
-          {/* Hidden input */}
+          {/* Hidden input — sized to be focusable on mobile for native keyboard */}
           <textarea
             ref={inputRef}
             value={typed}
             onChange={(e) => handleInput(e.target.value)}
-            className="absolute opacity-0 w-0 h-0"
             autoFocus
             spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            style={{
+              position: 'absolute',
+              left: 0,
+              bottom: 0,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              border: 'none',
+              padding: 0,
+              margin: 0,
+              resize: 'none',
+              caretColor: 'transparent',
+            }}
           />
 
           {gameOver && (

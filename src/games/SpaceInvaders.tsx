@@ -295,14 +295,23 @@ export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
     return () => cancelAnimationFrame(animRef.current);
   }, [gameStarted, gameOver, isArcade, setHighScore]);
 
+  const handleMobileTap = useCallback(() => {
+    if (!gameStarted || gameOver) resetGame();
+  }, [gameStarted, gameOver, resetGame]);
+
   const arcadeContent = (
-    <div className="p-3 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-2 shrink-0">
+    <div className={`flex flex-col h-full ${isMobile ? 'p-1' : 'p-3'}`}>
+      <div className="flex items-center justify-between mb-1 shrink-0 px-2">
         <p className="text-xs text-cyan-400">— SPACE INVADERS —</p>
         <button onClick={onExit} className="text-xs text-cyan-300 cursor-pointer underline">BACK</button>
       </div>
 
-      <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden">
+      {/* Canvas area — takes all available space between header and controls */}
+      <div
+        className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden"
+        onClick={isMobile ? handleMobileTap : undefined}
+        onTouchEnd={isMobile && (!gameStarted || gameOver) ? (e) => { e.preventDefault(); handleMobileTap(); } : undefined}
+      >
         <canvas
           ref={canvasRef}
           width={GAME_W}
@@ -315,7 +324,7 @@ export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
           <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-[#0a0a1a]/90">
             <p className="font-bold text-xl text-cyan-400">👾 SPACE INVADERS</p>
             <p className="text-sm text-cyan-300">Defend Earth from the bugs!</p>
-            <p className="animate-pulse text-sm text-cyan-300">Press ENTER to start</p>
+            <p className="animate-pulse text-sm text-cyan-300">{isMobile ? 'Tap to start' : 'Press ENTER to start'}</p>
           </div>
         )}
 
@@ -326,23 +335,25 @@ export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
             </p>
             <p className="text-base text-cyan-300">Score: {score}</p>
             <p className="text-sm text-cyan-400">Best: {useStore.getState().highScores.invaders || 0}</p>
-            <p className="animate-pulse text-sm text-cyan-300">ENTER to retry • ESC to exit</p>
+            <p className="animate-pulse text-sm text-cyan-300">{isMobile ? 'Tap to retry' : 'ENTER to retry • ESC to exit'}</p>
           </div>
         )}
       </div>
 
+      {/* Mobile controls — compact, fixed height */}
       {isMobile && (
-        <div className="flex items-center justify-between gap-4 py-3 shrink-0 px-2">
-          <VirtualJoystick axes="horizontal" size={100} />
+        <div className="flex items-center justify-between shrink-0 px-2 py-1" style={{ height: '90px' }}>
+          <VirtualJoystick axes="horizontal" size={80} />
           <ActionButton
             label="FIRE"
+            size={60}
             onPress={() => simulateKeyDown(' ')}
             onRelease={() => simulateKeyUp(' ')}
           />
         </div>
       )}
 
-      <p className={`text-center mt-2 shrink-0 text-xs ${isMobile ? 'text-cyan-400/80' : 'text-cyan-400/70'}`}>
+      <p className={`text-center shrink-0 text-xs ${isMobile ? 'text-cyan-400/80 py-0.5' : 'text-cyan-400/70 mt-2'}`}>
         {isMobile ? 'Joystick to move • FIRE to shoot' : '←/→ to move • SPACE/↑ to shoot • ESC to exit'}
       </p>
     </div>

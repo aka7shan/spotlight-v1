@@ -153,10 +153,15 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
 
   // ── Arcade Variant ──
   if (isArcade) {
-    const CELL = 'calc(100% / 20)'; // Each cell = 5% of container
+    const CELL = 'calc(100% / 20)';
     return (
-      <div className="p-3 flex flex-col h-full">
-        <div className="flex items-center justify-between mb-2">
+      <div className="relative p-3 flex flex-col h-full">
+        {/* Fullscreen swipe overlay for mobile — covers entire game area */}
+        {isMobile && (
+          <SwipeOverlay onSwipe={handleSwipe} onTap={handleTap} className="!fixed inset-0 !z-30" />
+        )}
+
+        <div className="flex items-center justify-between mb-2 relative z-40 pointer-events-auto">
           <p className="text-xs opacity-70">— SNAKE —</p>
           <button onClick={onExit} className="text-xs cursor-pointer underline">BACK</button>
         </div>
@@ -166,7 +171,6 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
           <span>HI: {useStore.getState().highScores.snake || 0}</span>
         </div>
 
-        {/* Game Grid wrapper — flex-1 claims remaining space, grid sizes itself via aspect-ratio */}
         <div className="flex-1 min-h-0 flex items-center justify-center">
           <div
             className="border border-[rgba(0,240,255,0.2)] relative w-full bg-[#0a0a1a]"
@@ -176,7 +180,7 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
               <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 z-10 text-[#00f0ff]">
                 <p className="text-xl font-bold">🐍 SNAKE</p>
                 <p className="text-sm">Catch the tech logos!</p>
-                <p className="text-sm animate-pulse">Press ENTER to start</p>
+                <p className="text-sm animate-pulse">{isMobile ? 'Tap to start' : 'Press ENTER to start'}</p>
               </div>
             )}
 
@@ -184,13 +188,12 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
               <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-[#0a0a1a]/90 z-10 text-[#00f0ff]">
                 <p className="text-xl font-bold">GAME OVER</p>
                 <p className="text-base">Score: {score}</p>
-                <p className="text-sm animate-pulse">Press ENTER to retry</p>
+                <p className="text-sm animate-pulse">{isMobile ? 'Tap to retry' : 'Press ENTER to retry'}</p>
               </div>
             )}
 
             {gameStarted && (
               <>
-                {/* Snake */}
                 {snake.map((segment, i) => (
                   <div
                     key={i}
@@ -205,7 +208,6 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
                   />
                 ))}
 
-                {/* Food */}
                 <div
                   className="absolute flex items-center justify-center bg-[#ff00aa]"
                   style={{
@@ -220,15 +222,11 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
                 </div>
               </>
             )}
-
-            {isMobile && (
-              <SwipeOverlay onSwipe={handleSwipe} onTap={handleTap} />
-            )}
           </div>
         </div>
 
         <p className="text-xs text-center mt-2 opacity-50">
-          {isMobile ? 'Swipe to move' : 'Arrow keys / WASD to move'} • ESC to exit
+          {isMobile ? 'Swipe anywhere to move • Tap to start' : 'Arrow keys / WASD to move'} • ESC to exit
         </p>
       </div>
     );
