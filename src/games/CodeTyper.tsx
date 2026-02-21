@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { useIsMobile } from '../components/TouchControls';
 
 interface CodeTyperProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -29,7 +30,8 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const setHighScore = useStore((s) => s.setHighScore);
 
-  const isGameBoy = variant === 'gameboy';
+  const isArcade = variant === 'arcade';
+  const isMobile = useIsMobile();
 
   const startGame = useCallback(() => {
     const randomSnippet = CODE_SNIPPETS[Math.floor(Math.random() * CODE_SNIPPETS.length)];
@@ -119,12 +121,12 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
       let className = '';
       if (i < typed.length) {
         className = typed[i] === char
-          ? (isGameBoy ? 'text-[#0f380f] font-bold' : 'text-green-400')
-          : (isGameBoy ? 'bg-[#306230] text-[#9bbc0f]' : 'bg-red-900 text-red-300');
+          ? (isArcade ? 'text-cyan-400 font-bold' : 'text-green-400')
+          : (isArcade ? 'bg-red-900/50 text-red-300' : 'bg-red-900 text-red-300');
       } else if (i === typed.length) {
-        className = isGameBoy ? 'bg-[#306230] text-[#9bbc0f] animate-pulse' : 'bg-green-900 text-green-300 animate-pulse';
+        className = isArcade ? 'bg-cyan-900 text-cyan-300 animate-pulse' : 'bg-green-900 text-green-300 animate-pulse';
       } else {
-        className = isGameBoy ? 'text-[#306230]/50' : 'text-gray-600';
+        className = isArcade ? 'text-gray-600' : 'text-gray-600';
       }
 
       return (
@@ -137,25 +139,31 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
 
   return (
     <div
-      className={isGameBoy ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
-      style={!isGameBoy ? { maxHeight: 'calc(100vh - 14rem)' } : undefined}
+      className={isArcade ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
+      style={!isArcade ? { maxHeight: 'calc(100vh - 14rem)' } : undefined}
     >
       <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={isGameBoy ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— CODE TYPER —</p>
+        <p className={isArcade ? 'text-cyan-400 text-xs' : 'text-green-400 text-xs'}>— CODE TYPER —</p>
         <button
           onClick={onExit}
-          className={isGameBoy ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}
+          className={isArcade ? 'text-cyan-400 text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}
         >
           BACK
         </button>
       </div>
 
+      {isMobile && (
+        <div className="text-xs text-center py-2 px-3 mb-2 rounded-lg bg-amber-900/20 border border-amber-700/30 text-amber-400">
+          📱 Best played on desktop with a physical keyboard
+        </div>
+      )}
+
       {!gameStarted && !gameOver && (
-        <div className={`text-center flex-1 flex flex-col items-center justify-center gap-3 ${isGameBoy ? '' : ''}`}>
-          <p className={`font-bold ${isGameBoy ? 'text-xl' : 'text-lg text-green-400'}`}>⌨️ CODE TYPER</p>
-          <p className={isGameBoy ? 'text-sm mt-2' : 'text-xs text-green-600 mt-2'}>Type code snippets as fast as you can!</p>
-          <p className={isGameBoy ? 'text-sm mt-1' : 'text-xs text-green-700 mt-1'}>60 seconds on the clock</p>
-          <p className={`animate-pulse mt-4 ${isGameBoy ? 'text-sm' : 'text-xs text-green-500'}`}>
+        <div className={`text-center flex-1 flex flex-col items-center justify-center gap-3 ${isArcade ? '' : ''}`}>
+          <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>⌨️ CODE TYPER</p>
+          <p className={isArcade ? 'text-gray-400 text-sm mt-2' : 'text-xs text-green-600 mt-2'}>Type code snippets as fast as you can!</p>
+          <p className={isArcade ? 'text-gray-400 text-sm mt-1' : 'text-xs text-green-700 mt-1'}>60 seconds on the clock</p>
+          <p className={`animate-pulse mt-4 ${isArcade ? 'text-cyan-400 text-sm' : 'text-xs text-green-500'}`}>
             Press ENTER to start
           </p>
         </div>
@@ -164,7 +172,7 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
       {gameStarted && (
         <div className="flex-1 flex flex-col">
           {/* Stats bar */}
-          <div className={`flex justify-between text-sm mb-3 ${isGameBoy ? '' : 'text-green-400'}`}>
+          <div className={`flex justify-between text-sm mb-3 ${isArcade ? 'text-cyan-400' : 'text-green-400'}`}>
             <span>⏱️ {timeLeft}s</span>
             <span>WPM: {wpm}</span>
             <span>ACC: {accuracy}%</span>
@@ -174,8 +182,8 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
           {/* Code display */}
           <div
             className={`border rounded p-3 font-mono whitespace-pre-wrap break-all cursor-text flex-1 ${
-              isGameBoy
-                ? 'border-[#306230] text-sm overflow-y-auto'
+              isArcade
+                ? 'border-cyan-800 bg-[#0a0a1a]/50 text-sm overflow-y-auto'
                 : 'border-green-800 bg-black/50 text-xs min-h-[120px] max-h-[200px] overflow-y-auto'
             }`}
             onClick={() => inputRef.current?.focus()}
@@ -195,15 +203,15 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
 
           {gameOver && (
             <div className={`text-center mt-3 p-4 border rounded ${
-              isGameBoy ? 'border-[#306230]' : 'border-green-800 bg-black/50'
+              isArcade ? 'border-cyan-800 bg-[#0a0a1a]/80' : 'border-green-800 bg-black/50'
             }`}>
-              <p className={`font-bold ${isGameBoy ? 'text-lg' : 'text-lg text-yellow-400'}`}>⏱️ TIME'S UP!</p>
-              <div className={`mt-2 space-y-1 ${isGameBoy ? 'text-sm' : 'text-sm text-green-400'}`}>
+              <p className={`font-bold ${isArcade ? 'text-lg text-cyan-400' : 'text-lg text-yellow-400'}`}>⏱️ TIME'S UP!</p>
+              <div className={`mt-2 space-y-1 ${isArcade ? 'text-sm text-cyan-400' : 'text-sm text-green-400'}`}>
                 <p>WPM: {wpm} {wpm >= 60 ? '🔥' : wpm >= 40 ? '👍' : '💪'}</p>
                 <p>Accuracy: {accuracy}%</p>
                 <p>High Score: {useStore.getState().highScores.typer || 0} WPM</p>
               </div>
-              <p className={`animate-pulse mt-2 ${isGameBoy ? 'text-sm' : 'text-xs text-green-500'}`}>
+              <p className={`animate-pulse mt-2 ${isArcade ? 'text-gray-400 text-sm' : 'text-xs text-green-500'}`}>
                 Press ENTER to retry • ESC to exit
               </p>
             </div>
@@ -211,7 +219,7 @@ export default function CodeTyper({ variant, onExit }: CodeTyperProps) {
         </div>
       )}
 
-      <p className={`text-center mt-2 ${isGameBoy ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
+      <p className={`text-center mt-2 ${isArcade ? 'text-cyan-800 text-xs' : 'text-green-700 text-xs'}`}>
         Type the code exactly • ESC to exit
       </p>
     </div>

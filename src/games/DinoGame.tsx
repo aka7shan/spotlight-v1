@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { SwipeOverlay, useIsMobile } from '../components/TouchControls';
 
 interface DinoGameProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -40,7 +41,9 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
   });
 
   const animRef = useRef<number>(0);
-  const isGameBoy = variant === 'gameboy';
+  const isArcade = variant === 'arcade';
+  const isMobile = useIsMobile();
+  const duckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const spawnObstacle = useCallback(() => {
     const state = gameState.current;
@@ -109,6 +112,38 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
     };
   }, [gameStarted, gameOver, onExit, resetGame]);
 
+  const handleTap = useCallback(() => {
+    if (!gameStarted || gameOver) {
+      resetGame();
+      return;
+    }
+    const state = gameState.current;
+    if (!state.isJumping) {
+      state.dinoVelocity = JUMP_FORCE;
+      state.isJumping = true;
+    }
+  }, [gameStarted, gameOver, resetGame]);
+
+  const handleSwipeDown = useCallback(() => {
+    const state = gameState.current;
+    if (duckTimeoutRef.current) clearTimeout(duckTimeoutRef.current);
+    state.isDucking = true;
+    duckTimeoutRef.current = setTimeout(() => {
+      gameState.current.isDucking = false;
+      duckTimeoutRef.current = null;
+    }, 500);
+  }, []);
+
+  const handleSwipe = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
+    if (dir === 'down') handleSwipeDown();
+  }, [handleSwipeDown]);
+
+  useEffect(() => {
+    return () => {
+      if (duckTimeoutRef.current) clearTimeout(duckTimeoutRef.current);
+    };
+  }, []);
+
   // Game loop with canvas
   useEffect(() => {
     if (!gameStarted || gameOver) return;
@@ -118,11 +153,11 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const gbColors = {
-      bg: '#9bbc0f',
-      dark: '#0f380f',
-      mid: '#306230',
-      light: '#8bac0f',
+    const arcadeColors = {
+      bg: '#0a0a1a',
+      dark: '#00f0ff',
+      mid: '#ff00aa',
+      light: '#39ff14',
     };
 
     const termColors = {
@@ -132,7 +167,7 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
       light: '#005500',
     };
 
-    const colors = isGameBoy ? gbColors : termColors;
+    const colors = isArcade ? arcadeColors : termColors;
 
     const gameLoop = () => {
       const state = gameState.current;
@@ -271,18 +306,18 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
 
     animRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [gameStarted, gameOver, isGameBoy, spawnObstacle, setHighScore]);
+  }, [gameStarted, gameOver, isArcade, spawnObstacle, setHighScore]);
 
   return (
     <div
-      className={isGameBoy ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
-      style={!isGameBoy ? { height: 'calc(100vh - 14rem)' } : undefined}
+      className={isArcade ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
+      style={!isArcade ? { height: 'calc(100vh - 14rem)' } : undefined}
     >
       <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={isGameBoy ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— DINO JUMP —</p>
+        <p className={isArcade ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— DINO JUMP —</p>
         <button
           onClick={onExit}
-          className={isGameBoy ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}
+          className={isArcade ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}
         >
           BACK
         </button>
@@ -293,39 +328,49 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
           ref={canvasRef}
           width={GAME_WIDTH}
           height={180}
-          className={`border ${isGameBoy ? 'border-[#306230]' : 'border-green-800'} block w-full h-full`}
+          className={`border ${isArcade ? 'border-cyan-800' : 'border-green-800'} block w-full h-full`}
           style={{ 
-            backgroundColor: isGameBoy ? '#9bbc0f' : '#000',
+            backgroundColor: isArcade ? '#0a0a1a' : '#000',
             imageRendering: 'pixelated',
             objectFit: 'contain',
           }}
         />
 
+        {isArcade && isMobile && (
+          <SwipeOverlay onTap={handleTap} onSwipe={handleSwipe} />
+        )}
+
         {!gameStarted && !gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isGameBoy ? '' : 'bg-black/80'}`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-green-400'}`}>🦖 DINO JUMP</p>
-            <p className={isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-600'}>Jump over obstacles!</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>
+          <div
+            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'}`}
+            style={isArcade && isMobile ? { pointerEvents: 'none' } : undefined}
+          >
+            <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>🦖 DINO JUMP</p>
+            <p className={isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-600'}>Jump over obstacles!</p>
+            <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-500'}`}>
               Press ENTER or SPACE to start
             </p>
           </div>
         )}
 
         {gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${
-            isGameBoy ? 'bg-[#9bbc0f]/90' : 'bg-black/80'
-          }`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-red-400'}`}>GAME OVER</p>
-            <p className={isGameBoy ? 'text-base text-[#306230]' : 'text-sm text-green-400'}>Score: {score}</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>
+          <div
+            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${
+              isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'
+            }`}
+            style={isArcade && isMobile ? { pointerEvents: 'none' } : undefined}
+          >
+            <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-red-400'}`}>GAME OVER</p>
+            <p className={isArcade ? 'text-base text-cyan-400' : 'text-sm text-green-400'}>Score: {score}</p>
+            <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-500'}`}>
               Press ENTER to retry • ESC to exit
             </p>
           </div>
         )}
       </div>
 
-      <p className={`text-center mt-2 shrink-0 ${isGameBoy ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
-        SPACE/↑ to jump • ↓ to duck • ESC to exit
+      <p className={`text-center mt-2 shrink-0 ${isArcade ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
+        {isMobile && isArcade ? 'Tap to jump • Swipe down to duck' : 'SPACE/↑ to jump • ↓ to duck • ESC to exit'}
       </p>
     </div>
   );

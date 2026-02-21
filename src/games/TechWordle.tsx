@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 
 interface TechWordleProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -132,7 +132,8 @@ interface Letter {
   status: LetterStatus;
 }
 
-export default function TechWordle({ variant, onExit }: TechWordleProps) {
+export default function TechWordle({ variant: _variant, onExit }: TechWordleProps) {
+  void _variant;
   const [answer, setAnswer] = useState('');
   const [guesses, setGuesses] = useState<Letter[][]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
@@ -144,7 +145,6 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
   const [wordMode, setWordMode] = useState<WordMode | null>(null); // null = not chosen yet
   const setHighScore = useStore((s) => s.setHighScore);
 
-  const isGameBoy = variant === 'gameboy';
   const MAX_GUESSES = 6;
 
   const startGame = useCallback((mode: WordMode) => {
@@ -262,19 +262,11 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
   };
 
   const getStatusColor = (status: LetterStatus) => {
-    if (isGameBoy) {
-      switch (status) {
-        case 'correct': return 'bg-[#0f380f] text-[#9bbc0f] border-[#0f380f]';           // ■ dark green = correct position
-        case 'present': return 'bg-[#8b8000] text-[#fffde7] border-[#8b8000]';            // ■ gold/yellow = in word, wrong spot
-        case 'absent': return 'bg-[#9bbc0f]/30 text-[#306230]/40 border-[#306230]/20';    // ■ faded = not in word
-        case 'empty': return 'border-[#306230] text-[#306230]';
-      }
-    }
     switch (status) {
-      case 'correct': return 'bg-green-600 text-white border-green-600';   // ■ green = correct position
-      case 'present': return 'bg-yellow-500 text-white border-yellow-500'; // ■ yellow = in word, wrong spot
-      case 'absent': return 'bg-gray-800 text-gray-500 border-gray-700';   // ■ gray = not in word
-      case 'empty': return 'border-green-800 text-green-400';
+      case 'correct': return 'bg-[#6aaa64] text-white border-[#6aaa64]';
+      case 'present': return 'bg-[#c9b458] text-white border-[#c9b458]';
+      case 'absent': return 'bg-[#787c7e] text-white border-[#787c7e]';
+      case 'empty': return 'border-[#3a3a3c] bg-[#121213] text-white';
     }
   };
 
@@ -297,68 +289,78 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
 
   return (
     <div
-      className={isGameBoy ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
-      style={!isGameBoy ? { height: 'calc(100vh - 14rem)' } : undefined}
+      className="flex flex-col h-full bg-[#121213] text-white"
+      style={{ height: 'calc(100vh - 14rem)' }}
     >
-      <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={isGameBoy ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>
-          — WORDLE{wordMode === 'tech' ? ' (TECH)' : wordMode === 'normal' ? ' (NORMAL)' : ''} —
-        </p>
-        <button onClick={onExit} className={isGameBoy ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
+      {/* Title bar */}
+      <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[#3a3a3c]">
+        <h1 className="text-xl font-bold tracking-wider">WORDLE</h1>
+        <button
+          onClick={onExit}
+          className="text-sm font-semibold cursor-pointer hover:text-gray-300 transition-colors"
+        >
+          BACK
+        </button>
       </div>
+
+      {/* Mode indicator */}
+      {wordMode && (
+        <p className="text-center text-xs text-gray-400 py-1 shrink-0">
+          {wordMode === 'tech' ? 'TECH' : 'NORMAL'}
+        </p>
+      )}
 
       {/* Mode Selection Screen */}
       {!gameStarted && wordMode === null && (
-        <div className="text-center py-8 flex-1 flex flex-col items-center justify-center">
-          <p className={`font-bold ${isGameBoy ? 'text-xl' : 'text-lg text-green-400'}`}>📝 WORDLE</p>
-          <p className={isGameBoy ? 'text-sm mt-3' : 'text-xs text-green-600 mt-2'}>Guess the 5-letter word in 6 tries!</p>
-          <p className={isGameBoy ? 'text-sm mt-2' : 'text-xs text-green-700 mt-1'}>🟩 = correct position • 🟨 = in word, wrong spot • ⬛ = not in word</p>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+          <h2 className="text-2xl font-bold mb-2">WORDLE</h2>
+          <p className="text-gray-400 text-sm text-center mb-1">
+            Guess the 5-letter word in 6 tries!
+          </p>
+          <p className="text-gray-500 text-xs text-center mb-8">
+            🟩 correct position • 🟨 in word, wrong spot • ⬛ not in word
+          </p>
 
-          <div className="mt-6 flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-4 w-full max-w-xs">
             <button
               onClick={() => startGame('normal')}
-              className={`px-6 py-3 rounded cursor-pointer transition-all ${
-                isGameBoy
-                  ? 'border-2 border-[#306230] hover:bg-[#306230]/30 text-base font-bold'
-                  : 'border border-green-700 hover:bg-green-900 text-green-400 text-sm'
-              }`}
+              className="w-full px-6 py-3 rounded-md bg-[#818384] hover:bg-[#6a6a6c] text-white font-semibold transition-colors cursor-pointer"
             >
-              1️⃣ Normal Words (easier)
+              Normal Mode
             </button>
             <button
               onClick={() => startGame('tech')}
-              className={`px-6 py-3 rounded cursor-pointer transition-all ${
-                isGameBoy
-                  ? 'border-2 border-[#306230] hover:bg-[#306230]/30 text-base font-bold'
-                  : 'border border-green-700 hover:bg-green-900 text-green-400 text-sm'
-              }`}
+              className="w-full px-6 py-3 rounded-md bg-[#818384] hover:bg-[#6a6a6c] text-white font-semibold transition-colors cursor-pointer"
             >
-              2️⃣ Tech Words (harder)
+              Tech Mode
             </button>
           </div>
 
-          <p className={`mt-4 opacity-50 ${isGameBoy ? 'text-xs' : 'text-[10px] text-green-700'}`}>
+          <p className="mt-8 text-gray-500 text-xs">
             Press 1 or 2 on keyboard, or click
           </p>
         </div>
       )}
 
       {gameStarted && (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 px-4">
+          {/* Message area */}
           {message && (
-            <div className={`text-center text-sm mb-1 shrink-0 ${won ? (isGameBoy ? 'text-[#0f380f] font-bold' : 'text-yellow-400 font-bold') : (isGameBoy ? '' : 'text-red-400')}`}>
+            <div className={`text-center text-sm py-2 shrink-0 ${won ? 'text-[#6aaa64] font-bold' : 'text-gray-400'}`}>
               {message}
             </div>
           )}
 
-          {/* Grid — rows share available height dynamically */}
-          <div className={`flex flex-col items-center gap-1 mb-1 flex-1 min-h-0 justify-center ${shake ? 'animate-shake' : ''}`}>
+          {/* Tile grid */}
+          <div
+            className={`flex flex-col items-center justify-center gap-1.5 flex-1 min-h-0 ${shake ? 'animate-shake' : ''}`}
+          >
             {Array.from({ length: MAX_GUESSES }, (_, row) => {
               const guess = guesses[row];
               const isCurrent = row === guesses.length && !gameOver;
 
               return (
-                <div key={row} className="flex gap-1.5 flex-1 min-h-0">
+                <div key={row} className="flex gap-1.5 justify-center">
                   {Array.from({ length: 5 }, (_, col) => {
                     let letter: Letter;
                     if (guess) {
@@ -369,14 +371,16 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
                       letter = { char: '', status: 'empty' };
                     }
 
+                    const hasResult = letter.status !== 'empty';
+
                     return (
                       <div
                         key={col}
-                        className={`aspect-square h-full max-h-12 border-2 flex items-center justify-center font-bold rounded transition-all duration-300 ${
-                          isGameBoy ? 'text-sm' : 'text-xs'
-                        } ${
-                          getStatusColor(letter.status)
-                        } ${isCurrent && col === currentGuess.length ? 'border-opacity-100' : ''}`}
+                        className={`w-14 h-14 md:w-16 md:h-16 border-2 flex items-center justify-center font-bold text-2xl text-white rounded transition-all duration-300 select-none ${
+                          letter.status === 'empty'
+                            ? 'border-[#3a3a3c] bg-[#121213]'
+                            : getStatusColor(letter.status)
+                        } ${hasResult ? 'animate-tile-pop' : ''}`}
                       >
                         {letter.char}
                       </div>
@@ -387,10 +391,10 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
             })}
           </div>
 
-          {/* On-screen keyboard — fixed at bottom */}
-          <div className="shrink-0 flex flex-col items-center gap-1">
+          {/* On-screen keyboard */}
+          <div className="shrink-0 flex flex-col items-center gap-1.5 py-4">
             {KEYBOARD.map((row, ri) => (
-              <div key={ri} className="flex gap-1">
+              <div key={ri} className="flex gap-1.5 justify-center">
                 {row.map((key) => {
                   const status = key.length === 1 ? getKeyStatus(key) : 'empty';
                   const isWide = key === 'ENTER' || key === '⌫';
@@ -399,9 +403,13 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
                     <button
                       key={key}
                       onClick={() => handleKeyboardClick(key)}
-                      className={`${isWide ? (isGameBoy ? 'px-2 text-[10px]' : 'px-1.5 text-[9px]') : (isGameBoy ? 'w-7 text-xs' : 'w-6 text-[10px]')} ${isGameBoy ? 'h-7' : 'h-7'} rounded flex items-center justify-center font-bold cursor-pointer active:scale-95 transition-all select-none ${
-                        getStatusColor(status)
-                      }`}
+                      className={`
+                        min-w-[32px] h-[52px] md:min-w-[43px] md:h-[58px]
+                        ${isWide ? 'min-w-[65px]' : ''}
+                        rounded-md flex items-center justify-center text-sm font-bold uppercase
+                        cursor-pointer active:scale-95 transition-all select-none text-white
+                        ${status === 'empty' ? 'bg-[#818384]' : getStatusColor(status)}
+                      `}
                     >
                       {key}
                     </button>
@@ -412,7 +420,7 @@ export default function TechWordle({ variant, onExit }: TechWordleProps) {
           </div>
 
           {gameOver && (
-            <p className={`text-center mt-1 animate-pulse shrink-0 ${isGameBoy ? 'text-xs' : 'text-[10px] text-green-500'}`}>
+            <p className="text-center py-2 text-gray-500 text-xs shrink-0">
               Press ENTER to play again • ESC to exit
             </p>
           )}
