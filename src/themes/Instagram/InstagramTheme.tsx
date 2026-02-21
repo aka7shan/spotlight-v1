@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { portfolioData } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
@@ -24,7 +25,7 @@ interface PostItem {
 }
 
 export default function InstagramTheme() {
-  const setTheme = useStore((s) => s.setTheme);
+  const navigate = useNavigate();
   const visitSection = useStore((s) => s.visitSection);
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
   const [storyProgress, setStoryProgress] = useState(0);
@@ -536,7 +537,7 @@ export default function InstagramTheme() {
       >
         <div className={`${isDesktop ? 'max-w-4xl' : 'max-w-lg'} mx-auto flex items-center justify-between px-4 py-3`}>
           <button
-            onClick={() => setTheme('landing')}
+            onClick={() => navigate('/')}
             className="text-gray-400 hover:text-white transition-colors cursor-pointer text-sm"
           >
             ← Back
@@ -807,7 +808,7 @@ export default function InstagramTheme() {
           <button className="p-2 text-xl cursor-pointer opacity-50">🛒</button>
           <button
             className="p-2 cursor-pointer"
-            onClick={() => setTheme('landing')}
+            onClick={() => navigate('/')}
           >
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-2 border-white" />
           </button>

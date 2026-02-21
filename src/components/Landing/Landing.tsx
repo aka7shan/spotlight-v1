@@ -1,5 +1,6 @@
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import type { ThemeType } from '../../store/useStore';
 
@@ -54,7 +55,7 @@ const storyTheme: ThemeOption = {
    LANDING — Scroll-driven cinematic intro → Theme Picker
    ================================================================ */
 export default function Landing() {
-  const setTheme = useStore((s) => s.setTheme);
+  const navigate = useNavigate();
 
   const [showIntro, setShowIntro] = useState(true);
   const [hoveredTheme, setHoveredTheme] = useState<string | null>(null);
@@ -552,7 +553,7 @@ export default function Landing() {
                     isHovered={hoveredTheme === theme.id}
                     onHover={() => setHoveredTheme(theme.id)}
                     onLeave={() => setHoveredTheme(null)}
-                    onClick={() => setTheme(theme.id)}
+                    onClick={() => navigate(`/${theme.id}`)}
                   />
                 ))}
               </div>
@@ -594,7 +595,7 @@ export default function Landing() {
               >
                 <MobileThemeCard
                   theme={theme}
-                  onClick={() => setTheme(theme.id)}
+                  onClick={() => navigate(`/${theme.id}`)}
                 />
               </motion.div>
             ))}

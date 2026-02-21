@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { portfolioData } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
@@ -150,7 +151,7 @@ export default function TerminalTheme() {
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<HTMLDivElement>(null);
-  const setTheme = useStore((s) => s.setTheme);
+  const routerNavigate = useNavigate();
   const visitSection = useStore((s) => s.visitSection);
   const isMobile = useIsMobile();
 
@@ -502,7 +503,7 @@ export default function TerminalTheme() {
           { type: 'output', content: '' },
         ]);
         if (args && ['netflix', 'instagram', 'gpt', 'arcade'].includes(args)) {
-          setTheme(args as any);
+          routerNavigate(`/${args}`);
         }
         break;
 
@@ -565,7 +566,7 @@ export default function TerminalTheme() {
         break;
 
       case 'exit':
-        setTheme('landing');
+        routerNavigate('/');
         break;
 
       case '':
@@ -579,7 +580,7 @@ export default function TerminalTheme() {
           { type: 'output', content: '' },
         ]);
     }
-  }, [addLines, setTheme, visitSection]);
+  }, [addLines, routerNavigate, visitSection]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -649,7 +650,7 @@ export default function TerminalTheme() {
         }`}>
           <div className="flex gap-2">
             <button
-              onClick={() => setTheme('landing')}
+              onClick={() => routerNavigate('/')}
               className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 cursor-pointer"
               title="Exit"
             />
