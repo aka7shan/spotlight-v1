@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { useIsMobile } from '../components/TouchControls';
 
 interface MemoryMatchProps {
   variant: 'arcade' | 'terminal';
@@ -37,6 +38,7 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
   const setHighScore = useStore((s) => s.setHighScore);
 
   const isArcade = variant === 'arcade';
+  const isMobile = useIsMobile();
   const totalPairs = TECH_PAIRS.length;
 
   const initGame = useCallback(() => {
@@ -156,11 +158,14 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
       </div>
 
       {!gameStarted && !gameOver && (
-        <div className="text-center flex-1 flex flex-col items-center justify-center gap-3">
+        <div
+          className="text-center flex-1 flex flex-col items-center justify-center gap-3"
+          onClick={isMobile ? initGame : undefined}
+        >
           <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>🧠 MEMORY MATCH</p>
           <p className={isArcade ? 'text-gray-400 text-sm mt-2' : 'text-xs text-green-600 mt-2'}>Match the tech icon pairs!</p>
           <p className={`animate-pulse mt-4 ${isArcade ? 'text-cyan-400 text-sm' : 'text-xs text-green-500'}`}>
-            Press ENTER to start
+            {isMobile ? 'Tap to start' : 'Press ENTER to start'}
           </p>
         </div>
       )}
@@ -205,9 +210,12 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
           </div>
 
           {gameOver && (
-            <div className={`text-center mt-2 p-2 border rounded shrink-0 ${
-              isArcade ? 'border-cyan-800 bg-[#0a0a1a]/80' : 'border-green-800 bg-black/50'
-            }`}>
+            <div
+              className={`text-center mt-2 p-2 border rounded shrink-0 ${
+                isArcade ? 'border-cyan-800 bg-[#0a0a1a]/80' : 'border-green-800 bg-black/50'
+              }`}
+              onClick={isMobile ? initGame : undefined}
+            >
               <p className={`font-bold ${isArcade ? 'text-lg text-cyan-400' : 'text-lg text-yellow-400'}`}>🎉 ALL MATCHED!</p>
               <div className={`mt-2 space-y-1 ${isArcade ? 'text-sm text-cyan-400' : 'text-sm text-green-400'}`}>
                 <p>Time: {elapsed}s</p>
@@ -215,7 +223,7 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
                 <p>Score: {Math.max(0, 1000 - moves * 10 - elapsed * 2)}</p>
               </div>
               <p className={`animate-pulse mt-2 ${isArcade ? 'text-sm text-gray-400' : 'text-xs text-green-500'}`}>
-                Press ENTER to play again • ESC to exit
+                {isMobile ? 'Tap to play again' : 'Press ENTER to play again • ESC to exit'}
               </p>
             </div>
           )}

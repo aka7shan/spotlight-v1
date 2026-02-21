@@ -8,18 +8,21 @@ interface DinoGameProps {
 }
 
 interface Obstacle {
-  x: number;
-  width: number;
-  height: number;
-  type: 'cactus' | 'bird';
+  x: number; width: number; height: number; type: 'cactus' | 'bird';
+}
+interface Cloud {
+  x: number; y: number; w: number; speed: number;
+}
+interface Particle {
+  x: number; y: number; vx: number; vy: number; life: number;
 }
 
 const GROUND_Y = 150;
-const DINO_WIDTH = 30;
-const DINO_HEIGHT = 35;
+const DINO_W = 30;
+const DINO_H = 35;
 const GRAVITY = 0.8;
 const JUMP_FORCE = -13;
-const GAME_WIDTH = 300;
+const GAME_W = 300;
 
 export default function DinoGame({ variant, onExit }: DinoGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,9 +30,13 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const setHighScore = useStore((s) => s.setHighScore);
+  const animRef = useRef<number>(0);
+  const isArcade = variant === 'arcade';
+  const isMobile = useIsMobile();
+  const duckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const gameState = useRef({
-    dinoY: GROUND_Y - DINO_HEIGHT,
+    dinoY: GROUND_Y - DINO_H,
     dinoVelocity: 0,
     isJumping: false,
     isDucking: false,
@@ -38,27 +45,30 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
     score: 0,
     frameCount: 0,
     groundOffset: 0,
+    clouds: [] as Cloud[],
+    particles: [] as Particle[],
+    deathFlash: 0,
+    runCycle: 0,
+    milestone: 0,
+    milestoneFlash: 0,
   });
 
-  const animRef = useRef<number>(0);
-  const isArcade = variant === 'arcade';
-  const isMobile = useIsMobile();
-  const duckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const spawnObstacle = useCallback(() => {
-    const state = gameState.current;
-    const type = Math.random() > 0.8 ? 'bird' : 'cactus';
-    state.obstacles.push({
-      x: GAME_WIDTH + 20,
-      width: type === 'cactus' ? 15 + Math.random() * 10 : 20,
-      height: type === 'cactus' ? 25 + Math.random() * 15 : 15,
-      type,
-    });
+  const initClouds = useCallback(() => {
+    const clouds: Cloud[] = [];
+    for (let i = 0; i < 4; i++) {
+      clouds.push({
+        x: Math.random() * GAME_W,
+        y: 20 + Math.random() * 50,
+        w: 25 + Math.random() * 30,
+        speed: 0.3 + Math.random() * 0.4,
+      });
+    }
+    return clouds;
   }, []);
 
   const resetGame = useCallback(() => {
     gameState.current = {
-      dinoY: GROUND_Y - DINO_HEIGHT,
+      dinoY: GROUND_Y - DINO_H,
       dinoVelocity: 0,
       isJumping: false,
       isDucking: false,
@@ -67,43 +77,41 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
       score: 0,
       frameCount: 0,
       groundOffset: 0,
+      clouds: initClouds(),
+      particles: [],
+      deathFlash: 0,
+      runCycle: 0,
+      milestone: 0,
+      milestoneFlash: 0,
     };
     setScore(0);
     setGameOver(false);
     setGameStarted(true);
-  }, []);
+  }, [initClouds]);
 
-  // Handle keyboard
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onExit(); return; }
-
       if (!gameStarted || gameOver) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          resetGame();
-        }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resetGame(); }
         return;
       }
-
-      const state = gameState.current;
-      if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && !state.isJumping) {
+      const s = gameState.current;
+      if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && !s.isJumping) {
         e.preventDefault();
-        state.dinoVelocity = JUMP_FORCE;
-        state.isJumping = true;
+        s.dinoVelocity = JUMP_FORCE;
+        s.isJumping = true;
       }
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
         e.preventDefault();
-        state.isDucking = true;
+        s.isDucking = true;
       }
     };
-
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
         gameState.current.isDucking = false;
       }
     };
-
     window.addEventListener('keydown', handleKey);
     window.addEventListener('keyup', handleKeyUp);
     return () => {
@@ -113,21 +121,18 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
   }, [gameStarted, gameOver, onExit, resetGame]);
 
   const handleTap = useCallback(() => {
-    if (!gameStarted || gameOver) {
-      resetGame();
-      return;
-    }
-    const state = gameState.current;
-    if (!state.isJumping) {
-      state.dinoVelocity = JUMP_FORCE;
-      state.isJumping = true;
+    if (!gameStarted || gameOver) { resetGame(); return; }
+    const s = gameState.current;
+    if (!s.isJumping) {
+      s.dinoVelocity = JUMP_FORCE;
+      s.isJumping = true;
     }
   }, [gameStarted, gameOver, resetGame]);
 
   const handleSwipeDown = useCallback(() => {
-    const state = gameState.current;
+    const s = gameState.current;
     if (duckTimeoutRef.current) clearTimeout(duckTimeoutRef.current);
-    state.isDucking = true;
+    s.isDucking = true;
     duckTimeoutRef.current = setTimeout(() => {
       gameState.current.isDucking = false;
       duckTimeoutRef.current = null;
@@ -136,201 +141,286 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
 
   const handleSwipe = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     if (dir === 'down') handleSwipeDown();
-  }, [handleSwipeDown]);
+    if (dir === 'up') handleTap();
+  }, [handleSwipeDown, handleTap]);
 
   useEffect(() => {
-    return () => {
-      if (duckTimeoutRef.current) clearTimeout(duckTimeoutRef.current);
-    };
+    return () => { if (duckTimeoutRef.current) clearTimeout(duckTimeoutRef.current); };
   }, []);
 
-  // Game loop with canvas
   useEffect(() => {
     if (!gameStarted || gameOver) return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const arcadeColors = {
-      bg: '#0a0a1a',
-      dark: '#00f0ff',
-      mid: '#ff00aa',
-      light: '#39ff14',
-    };
+    const colors = isArcade
+      ? { bg: '#06060f', ground: '#00f0ff', groundDark: '#00607080', dino: '#00f0ff', dinoGlow: 'rgba(0,240,255,0.2)', obstacle: '#ff00aa', cloud: 'rgba(0,240,255,0.06)', text: '#00f0ff', bird: '#39ff14' }
+      : { bg: '#000', ground: '#00ff00', groundDark: '#00550050', dino: '#4ade80', dinoGlow: 'rgba(74,222,128,0.15)', obstacle: '#00ff00', cloud: 'rgba(0,255,0,0.04)', text: '#00ff00', bird: '#00aa00' };
 
-    const termColors = {
-      bg: '#000000',
-      dark: '#00ff00',
-      mid: '#00aa00',
-      light: '#005500',
+    const spawnObstacle = () => {
+      const s = gameState.current;
+      const type = Math.random() > 0.8 && s.score > 50 ? 'bird' : 'cactus';
+      s.obstacles.push({
+        x: GAME_W + 20,
+        width: type === 'cactus' ? 14 + Math.random() * 10 : 20,
+        height: type === 'cactus' ? 25 + Math.random() * 15 : 14,
+        type,
+      });
     };
-
-    const colors = isArcade ? arcadeColors : termColors;
 
     const gameLoop = () => {
-      const state = gameState.current;
+      const s = gameState.current;
+      s.frameCount++;
 
       // Physics
-      state.dinoVelocity += GRAVITY;
-      state.dinoY += state.dinoVelocity;
-
-      if (state.dinoY >= GROUND_Y - DINO_HEIGHT) {
-        state.dinoY = GROUND_Y - DINO_HEIGHT;
-        state.dinoVelocity = 0;
-        state.isJumping = false;
+      s.dinoVelocity += GRAVITY;
+      s.dinoY += s.dinoVelocity;
+      if (s.dinoY >= GROUND_Y - DINO_H) {
+        s.dinoY = GROUND_Y - DINO_H;
+        s.dinoVelocity = 0;
+        s.isJumping = false;
       }
 
-      // Move obstacles
-      state.obstacles = state.obstacles.filter((o) => o.x > -30);
-      state.obstacles.forEach((o) => {
-        o.x -= state.speed;
+      // Running animation cycle
+      if (!s.isJumping) s.runCycle += s.speed * 0.15;
+
+      // Clouds
+      s.clouds.forEach((c) => {
+        c.x -= c.speed;
+        if (c.x + c.w < 0) { c.x = GAME_W + 10; c.y = 20 + Math.random() * 50; c.w = 25 + Math.random() * 30; }
       });
 
-      // Spawn obstacles
-      state.frameCount++;
-      if (state.frameCount % Math.max(40, 80 - Math.floor(state.score / 5)) === 0) {
-        spawnObstacle();
-      }
+      // Particles
+      s.particles = s.particles.filter((p) => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.04;
+        return p.life > 0;
+      });
 
-      // Score
-      if (state.frameCount % 5 === 0) {
-        state.score++;
-        setScore(state.score);
-      }
+      // Move obstacles
+      s.obstacles = s.obstacles.filter((o) => o.x > -40);
+      s.obstacles.forEach((o) => { o.x -= s.speed; });
 
-      // Speed up
-      state.speed = 4 + Math.floor(state.score / 50) * 0.5;
-      state.groundOffset = (state.groundOffset + state.speed) % 20;
+      // Spawn
+      const spawnInterval = Math.max(35, 75 - Math.floor(s.score / 5));
+      if (s.frameCount % spawnInterval === 0) spawnObstacle();
+
+      // Score + milestones
+      if (s.frameCount % 5 === 0) {
+        s.score++;
+        setScore(s.score);
+        if (s.score > 0 && s.score % 100 === 0 && s.score > s.milestone) {
+          s.milestone = s.score;
+          s.milestoneFlash = 1;
+        }
+      }
+      if (s.milestoneFlash > 0) s.milestoneFlash -= 0.015;
+
+      // Speed progression
+      s.speed = 4 + Math.floor(s.score / 50) * 0.5;
+      s.groundOffset = (s.groundOffset + s.speed) % 20;
 
       // Collision
+      const duck = s.isDucking;
       const dinoBox = {
-        x: 20,
-        y: state.dinoY,
-        w: state.isDucking ? DINO_WIDTH : DINO_WIDTH - 5,
-        h: state.isDucking ? DINO_HEIGHT / 2 : DINO_HEIGHT,
+        x: 22,
+        y: duck ? GROUND_Y - DINO_H / 2 : s.dinoY,
+        w: duck ? DINO_W + 2 : DINO_W - 6,
+        h: duck ? DINO_H / 2 : DINO_H,
       };
-      if (state.isDucking) {
-        dinoBox.y = GROUND_Y - DINO_HEIGHT / 2;
-      }
 
-      for (const obs of state.obstacles) {
+      for (const obs of s.obstacles) {
         const obsY = obs.type === 'bird' ? GROUND_Y - 50 : GROUND_Y - obs.height;
-        const obsBox = { x: obs.x, y: obsY, w: obs.width, h: obs.height };
-
+        const obsBox = { x: obs.x + 2, y: obsY, w: obs.width - 4, h: obs.height };
         if (
           dinoBox.x < obsBox.x + obsBox.w &&
           dinoBox.x + dinoBox.w > obsBox.x &&
           dinoBox.y < obsBox.y + obsBox.h &&
           dinoBox.y + dinoBox.h > obsBox.y
         ) {
+          s.deathFlash = 1;
+          for (let i = 0; i < 10; i++) {
+            s.particles.push({
+              x: dinoBox.x + DINO_W / 2, y: dinoBox.y + DINO_H / 2,
+              vx: (Math.random() - 0.5) * 4, vy: -Math.random() * 4,
+              life: 1,
+            });
+          }
           setGameOver(true);
-          setHighScore('dino', state.score);
+          setHighScore('dino', s.score);
           return;
         }
       }
 
-      // Draw
+      // ── DRAW ──
       ctx.fillStyle = colors.bg;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, GAME_W, 180);
 
-      // Ground
-      ctx.strokeStyle = colors.dark;
+      // Clouds
+      ctx.fillStyle = colors.cloud;
+      s.clouds.forEach((c) => {
+        ctx.beginPath();
+        ctx.ellipse(c.x + c.w / 2, c.y, c.w / 2, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(c.x + c.w * 0.3, c.y - 3, c.w * 0.3, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Ground line + texture
+      ctx.strokeStyle = colors.ground;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, GROUND_Y);
-      ctx.lineTo(canvas.width, GROUND_Y);
+      ctx.lineTo(GAME_W, GROUND_Y);
       ctx.stroke();
 
-      // Ground texture
+      // Ground details — dual layer parallax
+      ctx.strokeStyle = colors.groundDark;
       ctx.lineWidth = 1;
-      for (let i = -state.groundOffset; i < canvas.width; i += 20) {
+      for (let i = -s.groundOffset; i < GAME_W; i += 20) {
         ctx.beginPath();
         ctx.moveTo(i, GROUND_Y + 5);
         ctx.lineTo(i + 8, GROUND_Y + 5);
         ctx.stroke();
       }
+      for (let i = -(s.groundOffset * 0.6) % 30; i < GAME_W; i += 30) {
+        ctx.beginPath();
+        ctx.moveTo(i, GROUND_Y + 10);
+        ctx.lineTo(i + 5, GROUND_Y + 10);
+        ctx.stroke();
+      }
 
       // Dino
-      ctx.fillStyle = colors.dark;
-      const dinoDrawY = state.isDucking ? GROUND_Y - DINO_HEIGHT / 2 : state.dinoY;
-      const dinoDrawH = state.isDucking ? DINO_HEIGHT / 2 : DINO_HEIGHT;
+      ctx.fillStyle = colors.dino;
+      const duckNow = s.isDucking;
+      const drawY = duckNow ? GROUND_Y - DINO_H / 2 : s.dinoY;
+      const drawH = duckNow ? DINO_H / 2 : DINO_H;
 
+      // Dino glow
+      const gx = 20 + DINO_W / 2;
+      const gy = drawY + drawH / 2;
+      const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, DINO_W);
+      glow.addColorStop(0, colors.dinoGlow);
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(gx - DINO_W, gy - DINO_W, DINO_W * 2, DINO_W * 2);
+
+      ctx.fillStyle = colors.dino;
       // Body
-      ctx.fillRect(20, dinoDrawY, DINO_WIDTH - 5, dinoDrawH);
+      ctx.beginPath();
+      ctx.roundRect(20, drawY, DINO_W - 4, drawH, 4);
+      ctx.fill();
       // Head
-      ctx.fillRect(20 + DINO_WIDTH - 10, dinoDrawY - 5, 12, 12);
+      ctx.beginPath();
+      ctx.roundRect(20 + DINO_W - 10, drawY - (duckNow ? 0 : 6), 14, 13, 3);
+      ctx.fill();
       // Eye
       ctx.fillStyle = colors.bg;
-      ctx.fillRect(20 + DINO_WIDTH - 3, dinoDrawY - 2, 3, 3);
-      // Legs
-      ctx.fillStyle = colors.dark;
-      if (state.frameCount % 10 < 5) {
-        ctx.fillRect(25, dinoDrawY + dinoDrawH, 4, 8);
-        ctx.fillRect(35, dinoDrawY + dinoDrawH, 4, 8);
+      ctx.fillRect(20 + DINO_W, drawY - (duckNow ? -2 : 3), 3, 3);
+      // Mouth
+      ctx.fillStyle = colors.dino;
+      ctx.fillRect(20 + DINO_W + 2, drawY + (duckNow ? 6 : 2), 4, 1);
+
+      // Legs (animated running)
+      if (!s.isJumping) {
+        const cycle = Math.floor(s.runCycle) % 4;
+        ctx.fillStyle = colors.dino;
+        if (cycle < 2) {
+          ctx.fillRect(25, drawY + drawH, 4, 7);
+          ctx.fillRect(36, drawY + drawH, 4, 4);
+        } else {
+          ctx.fillRect(25, drawY + drawH, 4, 4);
+          ctx.fillRect(36, drawY + drawH, 4, 7);
+        }
       } else {
-        ctx.fillRect(28, dinoDrawY + dinoDrawH, 4, 8);
-        ctx.fillRect(38, dinoDrawY + dinoDrawH, 4, 8);
+        // Legs tucked while jumping
+        ctx.fillRect(27, drawY + drawH, 4, 4);
+        ctx.fillRect(34, drawY + drawH, 4, 4);
       }
 
       // Obstacles
-      state.obstacles.forEach((obs) => {
-        ctx.fillStyle = colors.dark;
+      s.obstacles.forEach((obs) => {
+        ctx.fillStyle = colors.obstacle;
         if (obs.type === 'cactus') {
-          ctx.fillRect(obs.x, GROUND_Y - obs.height, obs.width, obs.height);
-          // Cactus arms
-          ctx.fillRect(obs.x - 4, GROUND_Y - obs.height + 8, 4, 10);
-          ctx.fillRect(obs.x + obs.width, GROUND_Y - obs.height + 12, 4, 8);
+          const cx = obs.x;
+          const cy = GROUND_Y - obs.height;
+          // Main trunk
+          ctx.beginPath();
+          ctx.roundRect(cx + 2, cy, obs.width - 4, obs.height, 2);
+          ctx.fill();
+          // Left arm
+          ctx.fillRect(cx - 3, cy + 8, 5, 3);
+          ctx.fillRect(cx - 3, cy + 5, 3, 6);
+          // Right arm
+          ctx.fillRect(cx + obs.width - 2, cy + 12, 5, 3);
+          ctx.fillRect(cx + obs.width, cy + 10, 3, 6);
+          // Spines
+          ctx.fillRect(cx + obs.width / 2, cy - 2, 1, 3);
         } else {
-          // Bird
-          const birdY = GROUND_Y - 50;
-          ctx.fillRect(obs.x, birdY, obs.width, 8);
+          const by = GROUND_Y - 50;
+          ctx.fillStyle = colors.bird;
+          // Body
+          ctx.beginPath();
+          ctx.ellipse(obs.x + obs.width / 2, by + 4, obs.width / 2, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Beak
+          ctx.fillRect(obs.x + obs.width - 2, by + 2, 5, 3);
           // Wings
-          if (state.frameCount % 12 < 6) {
-            ctx.fillRect(obs.x + 3, birdY - 6, 10, 6);
-          } else {
-            ctx.fillRect(obs.x + 3, birdY + 8, 10, 6);
-          }
+          const wingUp = s.frameCount % 16 < 8;
+          ctx.fillRect(obs.x + 4, wingUp ? by - 7 : by + 9, 10, 5);
         }
       });
 
-      // Score
-      ctx.fillStyle = colors.dark;
-      ctx.font = `bold 12px monospace`;
+      // Death particles
+      s.particles.forEach((p) => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = colors.dino;
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+      });
+      ctx.globalAlpha = 1;
+
+      // Milestone flash
+      if (s.milestoneFlash > 0) {
+        ctx.globalAlpha = s.milestoneFlash;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, GAME_W, 180);
+        ctx.globalAlpha = 1;
+      }
+
+      // Score HUD
+      ctx.fillStyle = colors.text;
+      ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(`HI ${String(useStore.getState().highScores.dino || 0).padStart(5, '0')}  ${String(state.score).padStart(5, '0')}`, canvas.width - 10, 20);
+      const hi = useStore.getState().highScores.dino || 0;
+      ctx.fillText(`HI ${String(hi).padStart(5, '0')}  ${String(s.score).padStart(5, '0')}`, GAME_W - 10, 20);
 
       animRef.current = requestAnimationFrame(gameLoop);
     };
 
     animRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [gameStarted, gameOver, isArcade, spawnObstacle, setHighScore]);
+  }, [gameStarted, gameOver, isArcade, setHighScore]);
 
   return (
     <div
-      className={isArcade ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
+      className={isArcade ? 'p-2 flex flex-col h-full' : 'flex flex-col'}
       style={!isArcade ? { height: 'calc(100vh - 14rem)' } : undefined}
     >
-      <div className="flex items-center justify-between mb-2 shrink-0">
+      <div className="flex items-center justify-between mb-1 shrink-0">
         <p className={isArcade ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— DINO JUMP —</p>
-        <button
-          onClick={onExit}
-          className={isArcade ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}
-        >
-          BACK
-        </button>
+        <button onClick={onExit} className={isArcade ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
       </div>
 
       <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden">
         <canvas
           ref={canvasRef}
-          width={GAME_WIDTH}
+          width={GAME_W}
           height={180}
-          className={`border ${isArcade ? 'border-cyan-800' : 'border-green-800'} block w-full h-full`}
-          style={{ 
-            backgroundColor: isArcade ? '#0a0a1a' : '#000',
+          className={`border ${isArcade ? 'border-cyan-800/30' : 'border-green-800'} rounded block w-full h-full`}
+          style={{
+            backgroundColor: isArcade ? '#06060f' : '#000',
             imageRendering: 'pixelated',
             objectFit: 'contain',
           }}
@@ -342,37 +432,35 @@ export default function DinoGame({ variant, onExit }: DinoGameProps) {
 
         {!gameStarted && !gameOver && (
           <div
-            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'}`}
+            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#06060f]/90' : 'bg-black/80'}`}
             style={isArcade && isMobile ? { pointerEvents: 'none' } : undefined}
           >
-            <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>🦖 DINO JUMP</p>
-            <p className={isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-600'}>Jump over obstacles!</p>
+            <p className={`font-bold ${isArcade ? 'text-2xl text-cyan-400' : 'text-lg text-green-400'}`}>🦖 DINO JUMP</p>
+            <p className={isArcade ? 'text-sm text-cyan-400/80' : 'text-xs text-green-600'}>Jump over obstacles!</p>
             <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-500'}`}>
-              Press ENTER or SPACE to start
+              {isMobile ? 'Tap to start' : 'Press ENTER or SPACE to start'}
             </p>
           </div>
         )}
 
         {gameOver && (
           <div
-            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${
-              isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'
-            }`}
+            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#06060f]/85' : 'bg-black/80'}`}
             style={isArcade && isMobile ? { pointerEvents: 'none' } : undefined}
           >
-            <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-red-400'}`}>GAME OVER</p>
-            <p className={isArcade ? 'text-base text-cyan-400' : 'text-sm text-green-400'}>Score: {score}</p>
+            <p className={`font-bold ${isArcade ? 'text-2xl text-cyan-400' : 'text-lg text-red-400'}`}>GAME OVER</p>
+            <p className={isArcade ? 'text-lg text-cyan-400' : 'text-sm text-green-400'}>Score: {score}</p>
+            <p className={isArcade ? 'text-sm text-cyan-400/60' : 'text-xs text-gray-500'}>Best: {useStore.getState().highScores.dino || 0}</p>
             <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-500'}`}>
-              Press ENTER to retry • ESC to exit
+              {isMobile ? 'Tap to retry' : 'Press ENTER to retry • ESC to exit'}
             </p>
           </div>
         )}
       </div>
 
-      <p className={`text-center mt-2 shrink-0 ${isArcade ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
+      <p className={`text-center mt-1 shrink-0 ${isArcade ? 'text-xs opacity-40' : 'text-green-700 text-xs'}`}>
         {isMobile && isArcade ? 'Tap to jump • Swipe down to duck' : 'SPACE/↑ to jump • ↓ to duck • ESC to exit'}
       </p>
     </div>
   );
 }
-

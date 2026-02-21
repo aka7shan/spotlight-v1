@@ -259,7 +259,7 @@ export default function PongGame({ variant, onExit }: PongGameProps) {
         </div>
 
         {isArcade && isMobile && (
-          <div className="flex justify-center shrink-0" style={{ height: '90px' }}>
+          <div className="flex justify-start shrink-0 pl-4" style={{ height: '90px' }}>
             <VirtualJoystick axes="vertical" size={80} />
           </div>
         )}

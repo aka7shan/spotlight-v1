@@ -1,10 +1,7 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import type { ThemeType } from '../../store/useStore';
-
-/* homepage.png lives in public/ — served as-is by Vite at /homepage.png
-   For best perf: convert to WebP (saves ~60-70% size) and add to public/ */
 
 /* ─────────────── Theme options ─────────────── */
 interface ThemeOption {
@@ -53,44 +50,88 @@ const storyTheme: ThemeOption = {
   hidden: true,
 };
 
-/* ─────────────── Floating blobs ─────────────── */
-const blobs = [
-  { size: 320, x: '8%',  y: '15%', color: 'rgba(102,126,234,0.06)', dur: 22 },
-  { size: 220, x: '78%', y: '55%', color: 'rgba(118,75,162,0.05)',  dur: 26 },
-  { size: 180, x: '55%', y: '8%',  color: 'rgba(240,147,251,0.04)', dur: 19 },
-  { size: 120, x: '18%', y: '72%', color: 'rgba(102,126,234,0.05)', dur: 24 },
-  { size: 260, x: '68%', y: '78%', color: 'rgba(118,75,162,0.04)',  dur: 30 },
-];
-
 /* ================================================================
-   LANDING PAGE — <AS /> Intro → Full-screen Hero → Theme Picker
+   LANDING — Scroll-driven cinematic intro → Theme Picker
    ================================================================ */
 export default function Landing() {
   const setTheme = useStore((s) => s.setTheme);
 
   const [showIntro, setShowIntro] = useState(true);
-  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [hoveredTheme, setHoveredTheme] = useState<string | null>(null);
   const [storyUnlocked, setStoryUnlocked] = useState(false);
   const [showCheatBanner, setShowCheatBanner] = useState(false);
+
+  /* ── Scroll-driven animation refs ── */
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: scrollContainerRef,
+    offset: ['start start', 'end end'],
+  });
+
+  /* ═══ Scene Transforms ═══
+     Container = 700vh (desktop) / 400vh (mobile), sticky viewport = 100vh
+     scrollYProgress 0 → 1
+     Scene 1 (Hero):             0.00 – 0.20
+     Scene 2 (Avatar center):    0.20 – 0.32
+     Scene 3 (Portfolio):        0.34 – 0.50
+     Scene 4 (Tired text):       0.52 – 0.58 (fades in, never out)
+     Scene 5a (Char left):       0.58 – 0.72
+     Scene 5b (Know text):       0.72 – 0.78 (fades in, never out)
+     Scene 5c (Cards from right): 0.82 – 0.92 (final, homepage ends)
+  */
+
+  const heroBgOpacity = useTransform(scrollYProgress, [0, 0.08, 0.20], [1, 1, 0]);
+  const heroNameOpacity = useTransform(scrollYProgress, [0, 0.05, 0.15], [1, 1, 0]);
+  const heroNameY = useTransform(scrollYProgress, [0.05, 0.18], [0, -80]);
+
+  const avatarScale = useTransform(scrollYProgress, [0, 0.20, 0.32, 0.58, 0.70], [1, 1, 0.78, 0.78, 0.78]);
+  const avatarY = useTransform(scrollYProgress, [0.20, 0.32], [0, 80]);
+  const avatarX = useTransform(scrollYProgress, [0.58, 0.72], ['0%', '-30%']);
+  const avatarGlowOpacity = useTransform(scrollYProgress, [0.24, 0.32, 0.90, 1.0], [0, 0.4, 0.4, 0]);
+
+  const titleOpacity = useTransform(scrollYProgress, [0.34, 0.40, 0.48, 0.52], [0, 1, 1, 0]);
+
+  // Persistent name near character — appears after hero name fades, never fades out
+  const persistentNameOpacity = useTransform(scrollYProgress, [0.22, 0.30], [0, 1]);
+
+  const tiredOpacity = useTransform(scrollYProgress, [0.52, 0.58], [0, 1]);
+  const knowTextOpacity = useTransform(scrollYProgress, [0.72, 0.78], [0, 1]);
+  const cardsOpacity = useTransform(scrollYProgress, [0.82, 0.90], [0, 1]);
+  const cardsSlideX = useTransform(scrollYProgress, [0.82, 0.92], ['100%', '0%']);
+
+  const blobOpacity = useTransform(scrollYProgress, [0.06, 0.18, 0.90, 1.0], [0, 1, 1, 0]);
+  const scrollIndicatorOpacity = useTransform(scrollYProgress, [0, 0.03, 0.92, 1.0], [1, 0.6, 0.3, 0]);
+  const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
 
   /* ── Story Mode persistence ── */
   useEffect(() => {
     if (localStorage.getItem('story-unlocked') === 'true') setStoryUnlocked(true);
   }, []);
 
-  /* ── <AS /> intro animation (2.5s then auto-dismiss) ── */
+  /* ── Intro auto-dismiss ── */
   useEffect(() => {
     const timer = setTimeout(() => setShowIntro(false), 2500);
     return () => clearTimeout(timer);
   }, []);
 
-  /* ── Mouse tracking for spotlight ── */
+  /* ── Liquid blob cursor springs ── */
+  const cursorX = useMotionValue(-500);
+  const cursorY = useMotionValue(-500);
+  const blob1X = useSpring(cursorX, { damping: 20, stiffness: 70, mass: 1.2 });
+  const blob1Y = useSpring(cursorY, { damping: 20, stiffness: 70, mass: 1.2 });
+  const blob2X = useSpring(cursorX, { damping: 30, stiffness: 50, mass: 1.5 });
+  const blob2Y = useSpring(cursorY, { damping: 30, stiffness: 50, mass: 1.5 });
+  const blob3X = useSpring(cursorX, { damping: 40, stiffness: 35, mass: 2 });
+  const blob3Y = useSpring(cursorY, { damping: 40, stiffness: 35, mass: 2 });
+
   useEffect(() => {
-    const h = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
+    const h = (e: MouseEvent) => {
+      cursorX.set(e.clientX);
+      cursorY.set(e.clientY);
+    };
     window.addEventListener('mousemove', h);
     return () => window.removeEventListener('mousemove', h);
-  }, []);
+  }, [cursorX, cursorY]);
 
   /* ── Konami code ── */
   useEffect(() => {
@@ -108,9 +149,7 @@ export default function Landing() {
           setTimeout(() => setShowCheatBanner(false), 3000);
           pos = 0;
         }
-      } else {
-        pos = 0;
-      }
+      } else { pos = 0; }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -136,7 +175,17 @@ export default function Landing() {
   const allThemes = storyUnlocked ? [...themes, storyTheme] : themes;
 
   return (
-    <div className="min-h-screen bg-black relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#050505] relative" style={{ overflowX: 'clip' }}>
+
+      {/* ═══════ Scroll Progress Bar ═══════ */}
+      <motion.div
+        className="fixed top-0 left-0 h-[2px] z-[90]"
+        style={{
+          width: progressWidth,
+          background: 'linear-gradient(90deg, #e50914, #ff00aa, #00f0ff)',
+          opacity: showIntro ? 0 : 1,
+        }}
+      />
 
       {/* ═══════ CHEAT ACTIVATED banner ═══════ */}
       <AnimatePresence>
@@ -180,14 +229,12 @@ export default function Landing() {
         )}
       </AnimatePresence>
 
-      {/* ═══════════════════════════════════════
-           Intro — <AS /> splash screen
-         ═══════════════════════════════════════ */}
+      {/* ═══════ Intro — <AS /> splash ═══════ */}
       <AnimatePresence>
         {showIntro && (
           <motion.div
             key="intro"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505]"
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
           >
@@ -218,7 +265,7 @@ export default function Landing() {
                 transition={{ delay: 1, duration: 0.8 }}
               />
               <motion.p
-                className="text-gray-400 mt-4 text-lg"
+                className="text-gray-500 mt-4 text-lg"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.5 }}
@@ -230,128 +277,318 @@ export default function Landing() {
         )}
       </AnimatePresence>
 
-      {/* ═══════════════════════════════════════
-           Main Landing — Hero image + theme cards
-         ═══════════════════════════════════════ */}
-      <motion.div
-        className="relative z-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showIntro ? 0 : 1 }}
-        transition={{ delay: 0.3, duration: 0.8 }}
-        style={{ pointerEvents: showIntro ? 'none' : 'auto' }}
+      {/* ═══════════════════════════════════════════════
+           MAIN CONTENT — Scroll-Driven Cinematic Hero
+         ═══════════════════════════════════════════════ */}
+      <div
+        className="transition-opacity duration-[800ms]"
+        style={{
+          opacity: showIntro ? 0 : 1,
+          pointerEvents: showIntro ? 'none' : 'auto',
+          transitionDelay: showIntro ? '0ms' : '300ms',
+        }}
       >
-        {/* Spotlight cursor */}
-        <div
-          className="fixed inset-0 z-[1] pointer-events-none"
-          style={{
-            background: `radial-gradient(700px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255,255,255,0.03), transparent 40%)`,
-          }}
-        />
 
-        {/* Floating blobs */}
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-          {blobs.map((b, i) => (
+        {/* ═══ Scroll Container ═══ */}
+        <div ref={scrollContainerRef} className="relative h-[400vh] md:h-[700vh]">
+          <div className="sticky top-0 h-screen w-full overflow-hidden">
+
+            {/* ═══ Layer 1: Full background — fades on scroll ═══ */}
             <motion.div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: b.size, height: b.size,
-                left: b.x, top: b.y,
-                background: b.color,
-                filter: 'blur(80px)',
-              }}
-              animate={{
-                x: [0, 30, -25, 0],
-                y: [0, -25, 35, 0],
-                scale: [1, 1.1, 0.95, 1],
-              }}
-              transition={{ duration: b.dur, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          ))}
-        </div>
-
-        {/* ══════════ HERO SECTION ══════════ */}
-        <section className="relative h-screen overflow-hidden">
-          {/* Background illustration — optimised loading */}
-          <div className="absolute inset-0 z-0">
-            <img
-              src="/homepage.png"
-              alt="Akarshan Sharma"
-              className="w-full h-full object-cover"
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
-
-          {/* Gradient overlay — dark at bottom for text, subtle at top to preserve image */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-black/30 z-[2]" />
-
-          {/* Name + CTA — pinned to bottom */}
-          <div className="absolute bottom-0 left-0 right-0 z-10 px-6 md:px-16 pb-28 md:pb-32">
-            <motion.h1
-              className="text-white font-black leading-[0.85] tracking-tight mb-4"
-              style={{ fontSize: 'clamp(3rem, 10vw, 10rem)' }}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+              className="absolute inset-0 z-[1]"
+              style={{ opacity: heroBgOpacity }}
             >
-              Akarshan
-              <br />
-              <span className="text-white/90">Sharma</span>
-            </motion.h1>
-
-            <motion.p
-              className="text-white/40 text-lg md:text-xl tracking-wide mb-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-            >
-              Software Engineer
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.6 }}
-            >
-              <p className="text-white/60 text-xl md:text-2xl font-light">
-                How do you browse the internet?
-              </p>
-              <p className="text-white/30 text-sm mt-2">Choose your experience ↓</p>
+              <img
+                src="/homepage.png"
+                alt="Akarshan Sharma"
+                className="w-full h-full object-cover"
+                style={{ objectPosition: 'center 30%' }}
+                fetchPriority="high"
+                decoding="async"
+              />
             </motion.div>
-          </div>
 
-          {/* Scroll indicator */}
-          <motion.div
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
-          >
+            {/* ═══ Layer 2: Avatar glow ═══ */}
             <motion.div
-              animate={{ y: [0, 6, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-0 z-[2] flex items-center justify-center pointer-events-none"
+              style={{ opacity: avatarGlowOpacity }}
             >
-              <div className="w-5 h-8 rounded-full border border-white/20 flex justify-center pt-1.5">
-                <motion.div
-                  className="w-1 h-1 rounded-full bg-white/40"
-                  animate={{ y: [0, 10, 0], opacity: [1, 0.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                />
+              <div
+                className="w-[500px] h-[500px] md:w-[700px] md:h-[700px] rounded-full"
+                style={{
+                  background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 40%, transparent 70%)',
+                  filter: 'blur(40px)',
+                }}
+              />
+            </motion.div>
+
+            {/* ═══ Layer 3: PORTFOLIO title ═══ */}
+            <motion.div
+              className="absolute inset-0 z-[3] pointer-events-none"
+              style={{ opacity: titleOpacity }}
+            >
+              <div
+                className="absolute inset-x-0 top-[18%] flex items-center justify-center select-none"
+                style={{ fontSize: 'clamp(3.5rem, 10vw, 10rem)' }}
+              >
+                {([
+                  { char: 'P', rotate: -10, y: 6, size: 1.05 },
+                  { char: 'O', rotate: 5, y: -4, size: 0.94 },
+                  { char: 'R', rotate: -3, y: 5, size: 1.02 },
+                  { char: 'T', rotate: 7, y: -7, size: 1.1 },
+                  { char: 'F', rotate: -6, y: 3, size: 0.96 },
+                  { char: 'O', rotate: 8, y: -4, size: 1.0 },
+                  { char: 'L', rotate: -4, y: 6, size: 1.06 },
+                  { char: 'I', rotate: 3, y: -2, size: 0.9 },
+                  { char: 'O', rotate: -8, y: 4, size: 1.0 },
+                ] as const).map((l, i) => (
+                  <span
+                    key={i}
+                    className="inline-block font-black text-white leading-none"
+                    style={{
+                      transform: `rotate(${l.rotate}deg) translateY(${l.y}px)`,
+                      fontSize: `${l.size}em`,
+                    }}
+                  >
+                    {l.char}
+                  </span>
+                ))}
+                <span
+                  className="font-black text-white select-none ml-1"
+                  style={{
+                    fontSize: '0.3em',
+                    transform: 'rotate(5deg) translateY(-1em)',
+                    display: 'inline-block',
+                  }}
+                >
+                  '25
+                </span>
               </div>
             </motion.div>
-          </motion.div>
-        </section>
 
-        {/* ══════════ THEME CARDS ══════════ */}
-        <section className="relative z-20 px-4 md:px-8 pt-24 pb-32 bg-[#0a0a0a]">
-          {/* Section heading */}
+            {/* ═══ Liquid cursor blobs ═══ */}
+            <motion.div
+              className="absolute inset-0 z-[4] pointer-events-none overflow-hidden"
+              style={{ opacity: blobOpacity }}
+            >
+              <motion.div
+                className="absolute rounded-full"
+                style={{
+                  width: 400, height: 400,
+                  left: -200, top: -200,
+                  x: blob1X, y: blob1Y,
+                  background: 'radial-gradient(circle, rgba(255,0,136,0.22) 0%, rgba(255,0,136,0.05) 40%, transparent 70%)',
+                  filter: 'blur(50px)',
+                }}
+              />
+              <motion.div
+                className="absolute rounded-full"
+                style={{
+                  width: 350, height: 350,
+                  left: -175, top: -175,
+                  x: blob2X, y: blob2Y,
+                  background: 'radial-gradient(circle, rgba(0,200,255,0.20) 0%, rgba(0,200,255,0.04) 40%, transparent 70%)',
+                  filter: 'blur(60px)',
+                }}
+              />
+              <motion.div
+                className="absolute rounded-full"
+                style={{
+                  width: 300, height: 300,
+                  left: -150, top: -150,
+                  x: blob3X, y: blob3Y,
+                  background: 'radial-gradient(circle, rgba(140,0,255,0.18) 0%, rgba(140,0,255,0.04) 40%, transparent 70%)',
+                  filter: 'blur(45px)',
+                }}
+              />
+            </motion.div>
+
+            {/* ═══ Layer 5: Cutout avatar — always visible ═══ */}
+            <motion.div
+              className="absolute inset-0 z-[5] pointer-events-none"
+              style={{ scale: avatarScale, y: avatarY, x: avatarX }}
+            >
+              <img
+                src="/1000103078.png"
+                alt="Akarshan"
+                className="w-full h-full object-cover select-none"
+                style={{ objectPosition: 'center 30%' }}
+                draggable={false}
+              />
+            </motion.div>
+
+            {/* ═══ Vignette — matches original dark edges ═══ */}
+            <motion.div
+              className="absolute inset-0 z-[6] pointer-events-none"
+              style={{ opacity: heroBgOpacity }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'radial-gradient(ellipse 70% 60% at 50% 40%, transparent 30%, rgba(5,5,5,0.55) 100%)',
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent" />
+            </motion.div>
+
+            {/* ═══ Hero name text (Scene 1 — fades up on scroll) ═══ */}
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 z-[10] px-6 md:px-16 pb-16 md:pb-20"
+              style={{ opacity: heroNameOpacity, y: heroNameY }}
+            >
+              <h1
+                className="text-white font-black leading-[0.85] tracking-tight mb-3"
+                style={{ fontSize: 'clamp(3rem, 10vw, 10rem)' }}
+              >
+                Akarshan
+                <br />
+                <span className="text-white/90">Sharma</span>
+              </h1>
+              <p className="text-white/40 text-lg md:text-xl tracking-wide">
+                Software Engineer
+              </p>
+            </motion.div>
+
+            {/* ═══ Persistent name — near the character, bottom-right area ═══ */}
+            <motion.div
+              className="absolute z-[10] pointer-events-none"
+              style={{
+                opacity: persistentNameOpacity,
+                right: '8%',
+                bottom: '12%',
+              }}
+            >
+              <div className="text-right">
+                <p
+                  className="text-white/50 font-bold tracking-[0.3em] uppercase"
+                  style={{ fontSize: 'clamp(0.65rem, 1.4vw, 0.95rem)' }}
+                >
+                  Akarshan Sharma
+                </p>
+                <p className="text-white/25 text-[10px] tracking-[0.2em] mt-1">
+                  SOFTWARE ENGINEER
+                </p>
+              </div>
+            </motion.div>
+
+            {/* ═══ Scene 4: "Tired of boring portfolios?" — top-left, never fades out ═══ */}
+            <motion.div
+              className="absolute z-[10] pointer-events-none hidden md:block"
+              style={{
+                opacity: tiredOpacity,
+                left: '5%',
+                top: '10%',
+              }}
+            >
+              <div className="max-w-[400px] md:max-w-[500px]">
+                <h2 className="font-black leading-[1.05]" style={{ fontSize: 'clamp(2.4rem, 6vw, 4.5rem)' }}>
+                  <span className="text-white">Tired </span>
+                  <span className="text-white/30 font-light" style={{ fontSize: '0.55em' }}>of</span><br />
+                  <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">boring</span>{' '}
+                  <span className="text-white italic">portfolios</span>
+                  <span className="text-pink-500">?</span>
+                </h2>
+              </div>
+            </motion.div>
+
+            {/* ═══ Scene 5a: "Know about me..." — center area, never fades out ═══ */}
+            <motion.div
+              className="absolute z-[10] pointer-events-none hidden md:block"
+              style={{
+                opacity: knowTextOpacity,
+                left: '30%',
+                top: '25%',
+                width: '22%',
+              }}
+            >
+              <div>
+                <p className="text-white/15 text-[10px] tracking-[0.4em] uppercase mb-3">Choose your experience</p>
+                <h2 className="font-black leading-[1.1]" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.8rem)' }}>
+                  <span className="text-white/50 font-light italic" style={{ fontSize: '0.7em' }}>know about</span><br />
+                  <span className="text-white">me </span>
+                  <span className="text-white/30 font-light" style={{ fontSize: '0.6em' }}>in the</span><br />
+                  <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">style</span>{' '}
+                  <span className="text-white/30 font-light" style={{ fontSize: '0.6em' }}>of your</span><br />
+                  <span className="text-white">liking.</span>
+                </h2>
+              </div>
+            </motion.div>
+
+            {/* ═══ Scene 5b: Theme cards — slide from RIGHT (desktop only) ═══ */}
+            <motion.div
+              className="absolute z-[12] pointer-events-auto overflow-hidden hidden md:block"
+              style={{
+                opacity: cardsOpacity,
+                x: cardsSlideX,
+                top: '3%',
+                right: '0',
+                width: '46%',
+                height: '94%',
+                paddingRight: '2rem',
+                paddingLeft: '1rem',
+                paddingTop: '1rem',
+                paddingBottom: '1rem',
+              }}
+            >
+              <div className="grid grid-cols-2 grid-rows-3 gap-4 h-full">
+                {allThemes.map((theme) => (
+                  <ThemeCard
+                    key={theme.id}
+                    theme={theme}
+                    isHovered={hoveredTheme === theme.id}
+                    onHover={() => setHoveredTheme(theme.id)}
+                    onLeave={() => setHoveredTheme(null)}
+                    onClick={() => setTheme(theme.id)}
+                  />
+                ))}
+              </div>
+            </motion.div>
+
+            {/* ─── Scroll indicator ─── */}
+            <motion.div
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[20] flex flex-col items-center gap-2"
+              style={{ opacity: scrollIndicatorOpacity }}
+            >
+              <p className="text-white/30 text-xs tracking-[0.2em] uppercase">Scroll to explore</p>
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <div className="w-5 h-8 rounded-full border border-white/15 flex justify-center pt-1.5">
+                  <motion.div
+                    className="w-1 h-1 rounded-full bg-white/30"
+                    animate={{ y: [0, 10, 0], opacity: [1, 0.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+
+          </div>
+        </div>
+
+        {/* ═══ Mobile: "Pick your vibe" + single-column cards (normal scroll) ═══ */}
+        <section className="md:hidden relative z-20 px-5 pt-12 pb-20 bg-[#050505]">
           <motion.div
-            className="text-center mb-16"
+            className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+          >
+            <h2 className="font-black leading-[1.05] text-3xl mb-4">
+              <span className="text-white">Tired </span>
+              <span className="text-white/30 font-light text-lg">of</span><br />
+              <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">boring</span>{' '}
+              <span className="text-white italic">portfolios</span>
+              <span className="text-pink-500">?</span>
+            </h2>
+          </motion.div>
+
+          <motion.div
+            className="text-center mb-10"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
           >
             <p className="text-white/25 text-xs tracking-[0.4em] uppercase mb-3">Choose your experience</p>
             <h2 className="text-3xl md:text-4xl font-bold text-white">Pick your vibe</h2>
@@ -361,39 +598,38 @@ export default function Landing() {
             />
           </motion.div>
 
-          {/* Cards grid — 3 columns on desktop for better card proportions */}
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.05 }}
-            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-          >
+          <div className="flex flex-col gap-4 max-w-md mx-auto">
             {allThemes.map((theme) => (
-              <ThemeCard
+              <motion.div
                 key={theme.id}
-                theme={theme}
-                isHovered={hoveredTheme === theme.id}
-                onHover={() => setHoveredTheme(theme.id)}
-                onLeave={() => setHoveredTheme(null)}
-                onClick={() => setTheme(theme.id)}
-              />
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.1 }}
+                transition={{ duration: 0.4 }}
+              >
+                <ThemeCard
+                  theme={theme}
+                  isHovered={hoveredTheme === theme.id}
+                  onHover={() => setHoveredTheme(theme.id)}
+                  onLeave={() => setHoveredTheme(null)}
+                  onClick={() => setTheme(theme.id)}
+                />
+              </motion.div>
             ))}
-          </motion.div>
+          </div>
 
-          {/* Footer hint */}
           <motion.p
-            className="text-xs text-white/20 mt-20 text-center"
+            className="text-xs text-white/20 mt-16 text-center"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
             {storyUnlocked
-              ? '🎉 You unlocked Story Mode! There are more easter eggs to find...'
-              : '💡 Tip: There are hidden easter eggs. Try ↑↑↓↓←→←→BA'}
+              ? 'You unlocked Story Mode! There are more easter eggs to find...'
+              : 'Tip: There are hidden easter eggs. Try the Konami code!'}
           </motion.p>
         </section>
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -438,16 +674,16 @@ function ThemeCard({
   return (
     <motion.button
       ref={cardRef}
-      className={`group relative rounded-2xl overflow-hidden cursor-pointer text-left ${
+      className={`group relative rounded-xl overflow-hidden cursor-pointer text-left h-full flex flex-col ${
         theme.hidden ? 'ring-1 ring-amber-500/40' : ''
       }`}
       style={{
-        background: `linear-gradient(165deg, ${theme.color}08 0%, rgba(255,255,255,0.02) 50%, ${theme.color}05 100%)`,
-        border: `1px solid ${isHovered ? theme.color + '40' : 'rgba(255,255,255,0.06)'}`,
+        background: `linear-gradient(165deg, ${theme.color}12 0%, rgba(10,10,10,0.95) 50%, ${theme.color}08 100%)`,
+        border: `1px solid ${isHovered ? theme.color + '40' : 'rgba(255,255,255,0.08)'}`,
         boxShadow: isHovered
-          ? `0 20px 50px -12px ${theme.color}25, 0 0 0 1px ${theme.color}20`
-          : '0 4px 20px -4px rgba(0,0,0,0.3)',
-        transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateY(${isHovered ? -6 : 0}px)`,
+          ? `0 16px 40px -8px ${theme.color}25, 0 0 0 1px ${theme.color}20`
+          : '0 2px 12px -2px rgba(0,0,0,0.4)',
+        transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateY(${isHovered ? -4 : 0}px)`,
         transition: 'transform 0.2s ease-out, border-color 0.3s, box-shadow 0.3s',
       }}
       variants={cardVariants}
@@ -457,53 +693,35 @@ function ThemeCard({
       onMouseLeave={handleLeave}
       onClick={onClick}
     >
-      {/* SECRET badge */}
       {theme.hidden && (
-        <div className="absolute top-3 right-3 z-20 bg-amber-500/20 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
-          🔓 SECRET
+        <div className="absolute top-2 right-2 z-20 bg-amber-500/20 text-amber-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-amber-500/30">
+          SECRET
         </div>
       )}
 
-      {/* ── Mini theme preview ── */}
-      <div className="relative m-3 mb-0 rounded-xl overflow-hidden" style={{ height: '130px' }}>
+      <div className="relative m-2 mb-0 rounded-lg overflow-hidden flex-1 min-h-[60px] md:min-h-0">
         <ThemePreview id={theme.id} color={theme.color} />
-        {/* Subtle overlay for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
-      {/* ── Card body ── */}
-      <div className="relative z-10 p-5 pt-4">
-        {/* Theme label + icon */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xl">{theme.icon}</span>
+      <div className="relative z-10 p-3 pt-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className="text-base">{theme.icon}</span>
           <span
-            className="text-xs font-semibold tracking-wider uppercase transition-colors duration-300"
+            className="text-[10px] font-semibold tracking-wider uppercase transition-colors duration-300"
             style={{ color: isHovered ? theme.color : 'rgba(255,255,255,0.35)' }}
           >
             {theme.label}
           </span>
         </div>
 
-        {/* Question */}
-        <h3 className="text-lg font-bold text-white mb-1.5 leading-tight">
+        <h3 className="text-sm font-bold text-white mb-1 leading-tight">
           {theme.question}
         </h3>
 
-        {/* Description */}
-        <p className="text-sm text-white/30 group-hover:text-white/50 transition-colors leading-relaxed mb-4">
+        <p className="text-xs text-white/30 group-hover:text-white/50 transition-colors leading-snug line-clamp-2">
           {theme.description}
         </p>
-
-        {/* CTA */}
-        <div
-          className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0"
-          style={{ color: theme.color }}
-        >
-          Enter {theme.label}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </div>
       </div>
     </motion.button>
   );
@@ -511,15 +729,12 @@ function ThemeCard({
 
 /* ═══════════════════════════════════════════════
    Mini CSS Theme Previews
-   Each renders a tiny visual mockup of the theme
    ═══════════════════════════════════════════════ */
 function ThemePreview({ id, color }: { id: string; color: string }) {
   switch (id) {
-    /* ── Netflix: dark bg, red accent, thumbnail rows ── */
     case 'netflix':
       return (
         <div className="w-full h-full bg-[#141414] p-3 flex flex-col">
-          {/* Nav bar */}
           <div className="flex items-center gap-2 mb-3">
             <div className="w-5 h-3 bg-red-600 rounded-sm font-black text-[6px] text-white flex items-center justify-center">N</div>
             <div className="flex gap-1.5">
@@ -528,11 +743,9 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
               ))}
             </div>
           </div>
-          {/* Hero banner */}
           <div className="w-full h-10 bg-gradient-to-r from-red-900/60 to-red-900/20 rounded mb-2 flex items-end p-1.5">
             <div className="w-12 h-1 bg-white/60 rounded-full" />
           </div>
-          {/* Thumbnail rows */}
           <div className="flex-1 flex flex-col gap-1.5">
             <div className="text-[5px] text-white/30 pl-0.5">Trending Now</div>
             <div className="flex gap-1">
@@ -550,11 +763,9 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
         </div>
       );
 
-    /* ── Instagram: feed layout with avatar + grid ── */
     case 'instagram':
       return (
         <div className="w-full h-full bg-gradient-to-br from-[#1a1a2e] to-[#16213e] p-3 flex flex-col">
-          {/* Profile header */}
           <div className="flex items-center gap-2 mb-2.5">
             <div className="w-7 h-7 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }}>
               <div className="w-full h-full rounded-full border-2 border-[#1a1a2e] flex items-center justify-center text-[6px] text-white">AS</div>
@@ -565,7 +776,6 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
             </div>
             <div className="px-2 py-0.5 bg-blue-500 rounded text-[5px] text-white">Follow</div>
           </div>
-          {/* Photo grid */}
           <div className="flex-1 grid grid-cols-3 gap-0.5 rounded overflow-hidden">
             {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="aspect-square" style={{
@@ -586,18 +796,15 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
         </div>
       );
 
-    /* ── Terminal: dark bg, green text, blinking cursor ── */
     case 'terminal':
       return (
         <div className="w-full h-full bg-[#0c0c0c] p-2.5 flex flex-col font-mono">
-          {/* Window chrome */}
           <div className="flex items-center gap-1 mb-2">
             <span className="w-2 h-2 rounded-full bg-[#ff5f57]" />
             <span className="w-2 h-2 rounded-full bg-[#febc2e]" />
             <span className="w-2 h-2 rounded-full bg-[#28c840]" />
             <span className="text-[6px] text-white/20 ml-2">akarshan@portfolio ~</span>
           </div>
-          {/* Terminal lines */}
           <div className="flex-1 flex flex-col gap-0.5 text-[7px] leading-relaxed">
             <p><span className="text-green-400">❯</span> <span className="text-white/60">whoami</span></p>
             <p className="text-green-300/80">akarshan sharma</p>
@@ -613,16 +820,13 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
         </div>
       );
 
-    /* ── GPT: chat interface with bubbles ── */
     case 'gpt':
       return (
         <div className="w-full h-full bg-[#0d1117] p-3 flex flex-col gap-2">
-          {/* Header */}
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center text-[5px] text-white font-bold">AI</div>
             <span className="text-[7px] text-white/50">ChatGPT · Akarshan Mode</span>
           </div>
-          {/* Chat bubbles */}
           <div className="bg-white/[0.04] rounded-lg px-2 py-1.5 max-w-[80%] self-end">
             <p className="text-[6px] text-white/60">Tell me about your experience</p>
           </div>
@@ -632,7 +836,6 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
           <div className="bg-white/[0.04] rounded-lg px-2 py-1.5 max-w-[70%] self-end">
             <p className="text-[6px] text-white/60">What are your top skills?</p>
           </div>
-          {/* Typing indicator */}
           <div className="flex gap-0.5 px-2 self-start">
             {[0, 1, 2].map((i) => (
               <motion.div
@@ -646,7 +849,6 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
         </div>
       );
 
-    /* ── Arcade: neon cyberpunk screen ── */
     case 'arcade':
       return (
         <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: '#0a0a1a' }}>
@@ -676,12 +878,10 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
         </div>
       );
 
-    /* ── Story: timeline journey ── */
     case 'story':
       return (
         <div className="w-full h-full bg-gradient-to-b from-amber-950/30 to-[#0a0a0a] p-3 flex items-center justify-center">
           <div className="flex flex-col items-center gap-0 relative">
-            {/* Timeline */}
             <div className="absolute top-1 bottom-1 w-px bg-amber-500/30" />
             {[
               { emoji: '🏫', label: 'School', year: '2017' },

@@ -79,6 +79,7 @@ export function VirtualJoystick({ axes = 'both', size = 120, onDirection }: Virt
   const activeKeysRef = useRef<Set<string>>(new Set());
   const onDirectionRef = useRef(onDirection);
   onDirectionRef.current = onDirection;
+  const touchIdRef = useRef<number | null>(null);
 
   const dispatchKey = useCallback((key: string, type: 'keydown' | 'keyup') => {
     window.dispatchEvent(new KeyboardEvent(type, { key, bubbles: true }));
@@ -105,21 +106,26 @@ export function VirtualJoystick({ axes = 'both', size = 120, onDirection }: Virt
     onDirectionRef.current?.({ x, y });
   }, [axes, dispatchKey]);
 
-  // Use native event listeners with { passive: false } to allow preventDefault
+  const releaseAll = useCallback(() => {
+    setKnobPos({ x: 0, y: 0 });
+    activeKeysRef.current.forEach(k => dispatchKey(k, 'keyup'));
+    activeKeysRef.current.clear();
+    onDirectionRef.current?.({ x: 0, y: 0 });
+    touchIdRef.current = null;
+  }, [dispatchKey]);
+
   useEffect(() => {
     const el = baseRef.current;
     if (!el) return;
 
-    const handleTouch = (e: TouchEvent) => {
-      e.preventDefault();
+    const processTouch = (touch: Touch) => {
       const rect = el.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
-      const t = e.touches[0];
       const maxR = size / 2 - 15;
 
-      let dx = t.clientX - cx;
-      let dy = t.clientY - cy;
+      let dx = touch.clientX - cx;
+      let dy = touch.clientY - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist > maxR) {
         dx = (dx / dist) * maxR;
@@ -130,24 +136,44 @@ export function VirtualJoystick({ axes = 'both', size = 120, onDirection }: Virt
       updateKeys(dx / maxR, dy / maxR);
     };
 
-    const handleTouchEnd = () => {
-      setKnobPos({ x: 0, y: 0 });
-      activeKeysRef.current.forEach(k => dispatchKey(k, 'keyup'));
-      activeKeysRef.current.clear();
-      onDirectionRef.current?.({ x: 0, y: 0 });
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      touchIdRef.current = touch.identifier;
+      processTouch(touch);
     };
 
-    el.addEventListener('touchstart', handleTouch, { passive: false });
-    el.addEventListener('touchmove', handleTouch, { passive: false });
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (touchIdRef.current === null) return;
+      for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].identifier === touchIdRef.current) {
+          processTouch(e.touches[i]);
+          return;
+        }
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchIdRef.current) {
+          releaseAll();
+          return;
+        }
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: false });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
     el.addEventListener('touchend', handleTouchEnd);
     el.addEventListener('touchcancel', handleTouchEnd);
     return () => {
-      el.removeEventListener('touchstart', handleTouch);
-      el.removeEventListener('touchmove', handleTouch);
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
       el.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [size, updateKeys, dispatchKey]);
+  }, [size, updateKeys, releaseAll]);
 
   return (
     <div
@@ -189,15 +215,29 @@ export function ActionButton({ label, size = 70, color = '#ff00aa', onPress, onR
   const btnRef = useRef<HTMLButtonElement>(null);
   const onPressRef = useRef(onPress);
   const onReleaseRef = useRef(onRelease);
+  const touchIdRef = useRef<number | null>(null);
   onPressRef.current = onPress;
   onReleaseRef.current = onRelease;
 
   useEffect(() => {
     const el = btnRef.current;
     if (!el) return;
-    const handleStart = (e: TouchEvent) => { e.preventDefault(); onPressRef.current(); };
-    const handleEnd = (e: TouchEvent) => { e.preventDefault(); onReleaseRef.current?.(); };
-    const handleCancel = () => { onReleaseRef.current?.(); };
+    const handleStart = (e: TouchEvent) => {
+      e.preventDefault();
+      touchIdRef.current = e.changedTouches[0].identifier;
+      onPressRef.current();
+    };
+    const handleEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchIdRef.current) {
+          e.preventDefault();
+          touchIdRef.current = null;
+          onReleaseRef.current?.();
+          return;
+        }
+      }
+    };
+    const handleCancel = () => { touchIdRef.current = null; onReleaseRef.current?.(); };
     el.addEventListener('touchstart', handleStart, { passive: false });
     el.addEventListener('touchend', handleEnd, { passive: false });
     el.addEventListener('touchcancel', handleCancel);
@@ -222,8 +262,6 @@ export function ActionButton({ label, size = 70, color = '#ff00aa', onPress, onR
         fontSize: size * 0.25,
         touchAction: 'none',
       }}
-      onPointerDown={onPress}
-      onPointerUp={() => onRelease?.()}
     >
       {label}
     </button>
