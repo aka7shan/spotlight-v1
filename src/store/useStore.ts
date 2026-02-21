@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type ThemeType = 'landing' | 'netflix' | 'instagram' | 'terminal' | 'gpt' | 'gameboy' | 'reddit' | 'story';
+export type ThemeType = 'landing' | 'netflix' | 'instagram' | 'terminal' | 'gpt' | 'arcade' | 'reddit' | 'story';
 
 export interface Achievement {
   id: string;

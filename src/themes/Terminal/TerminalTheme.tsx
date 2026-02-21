@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { portfolioData } from '../../data/portfolio';
 import { useStore } from '../../store/useStore';
+import { useIsMobile } from '../../components/TouchControls';
 import SnakeGame from '../../games/SnakeGame';
 import DinoGame from '../../games/DinoGame';
 import CodeTyper from '../../games/CodeTyper';
@@ -151,6 +152,7 @@ export default function TerminalTheme() {
   const gameRef = useRef<HTMLDivElement>(null);
   const setTheme = useStore((s) => s.setTheme);
   const visitSection = useStore((s) => s.visitSection);
+  const isMobile = useIsMobile();
 
   const commands = ['help', 'whoami', 'about', 'skills', 'experience', 'projects', 'education',
     'certifications', 'contact', 'neofetch', 'clear', 'theme', 'ls', 'cat', 'pwd',
@@ -495,11 +497,11 @@ export default function TerminalTheme() {
       case 'theme':
         addLines([
           inputLine,
-          { type: 'output', content: 'Available themes: netflix, instagram, terminal, gpt, gameboy' },
+          { type: 'output', content: 'Available themes: netflix, instagram, terminal, gpt, arcade' },
           { type: 'output', content: 'Usage: theme <name> or type "exit" to go back to selector' },
           { type: 'output', content: '' },
         ]);
-        if (args && ['netflix', 'instagram', 'gpt', 'gameboy'].includes(args)) {
+        if (args && ['netflix', 'instagram', 'gpt', 'arcade'].includes(args)) {
           setTheme(args as any);
         }
         break;
@@ -517,51 +519,49 @@ export default function TerminalTheme() {
           { type: 'output', content: '⌨️  typer      — Code Typing Speed Test' },
           { type: 'output', content: '🧠 memory     — Tech Memory Match' },
           { type: 'output', content: '' },
-          { type: 'output', content: 'Type the game name to play! (e.g. "snake")' },
-          { type: 'output', content: '' },
+          ...(isMobile ? [
+            { type: 'output' as const, content: '📱 Games are best experienced in Arcade mode on mobile!' },
+            { type: 'output' as const, content: '   Type "theme arcade" to switch, or visit Arcade from the landing page.' },
+            { type: 'output' as const, content: '' },
+          ] : [
+            { type: 'output' as const, content: 'Type the game name to play! (e.g. "snake")' },
+            { type: 'output' as const, content: '' },
+          ]),
         ]);
         break;
 
       // All game launches use setTimeout so the Enter key from submitting
       // the terminal command doesn't propagate and auto-start the game.
+      // On mobile, redirect to Arcade theme instead of launching inline.
       case 'snake':
-        addLines([inputLine, { type: 'success', content: '🐍 Launching Snake... Press ENTER to start.' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('snake'), 150);
-        break;
-
       case 'dino':
-        addLines([inputLine, { type: 'success', content: '🦖 Launching Dino Jump... Press ENTER to start.' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('dino'), 150);
-        break;
-
       case 'typer':
-        addLines([inputLine, { type: 'success', content: '⌨️ Launching Code Typer... Press ENTER to start.' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('typer'), 150);
-        break;
-
       case 'memory':
-        addLines([inputLine, { type: 'success', content: '🧠 Launching Memory Match... Press ENTER to start.' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('memory'), 150);
-        break;
-
       case 'wordle':
-        addLines([inputLine, { type: 'success', content: '📝 Launching Wordle... Choose Normal (1) or Tech (2).' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('wordle'), 150);
-        break;
-
       case 'flappy':
-        addLines([inputLine, { type: 'success', content: '🐦 Launching Flappy Bird... Press ENTER to start.' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('flappy'), 150);
-        break;
-
       case 'pong':
-        addLines([inputLine, { type: 'success', content: '🏓 Launching Pong... Press ENTER to start.' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('pong'), 150);
-        break;
-
       case 'invaders':
-        addLines([inputLine, { type: 'success', content: '👾 Launching Space Invaders... Press ENTER to start.' }, { type: 'output', content: '' }]);
-        setTimeout(() => setActiveGame('invaders'), 150);
+        if (isMobile) {
+          addLines([
+            inputLine,
+            { type: 'output', content: `📱 "${cmd}" is best played in Arcade mode on mobile!` },
+            { type: 'output', content: '   Type "theme arcade" to switch to the Arcade for touch-friendly controls.' },
+            { type: 'output', content: '' },
+          ]);
+        } else {
+          const gameLabels: Record<string, string> = {
+            snake: '🐍 Launching Snake... Press ENTER to start.',
+            dino: '🦖 Launching Dino Jump... Press ENTER to start.',
+            typer: '⌨️ Launching Code Typer... Press ENTER to start.',
+            memory: '🧠 Launching Memory Match... Press ENTER to start.',
+            wordle: '📝 Launching Wordle... Choose Normal (1) or Tech (2).',
+            flappy: '🐦 Launching Flappy Bird... Press ENTER to start.',
+            pong: '🏓 Launching Pong... Press ENTER to start.',
+            invaders: '👾 Launching Space Invaders... Press ENTER to start.',
+          };
+          addLines([inputLine, { type: 'success', content: gameLabels[cmd] || 'Launching...' }, { type: 'output', content: '' }]);
+          setTimeout(() => setActiveGame(cmd as any), 150);
+        }
         break;
 
       case 'exit':
