@@ -60,12 +60,21 @@ export default function Landing() {
   const [hoveredTheme, setHoveredTheme] = useState<string | null>(null);
   const [storyUnlocked, setStoryUnlocked] = useState(false);
   const [showCheatBanner, setShowCheatBanner] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   /* ── Scroll-driven animation refs ── */
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: scrollContainerRef,
     offset: ['start start', 'end end'],
+    layoutEffect: false,
   });
 
   /* ═══ Scene Transforms ═══
@@ -84,9 +93,17 @@ export default function Landing() {
   const heroNameOpacity = useTransform(scrollYProgress, [0, 0.05, 0.15], [1, 1, 0]);
   const heroNameY = useTransform(scrollYProgress, [0.05, 0.18], [0, -80]);
 
-  const avatarScale = useTransform(scrollYProgress, [0, 0.20, 0.32, 0.58, 0.70], [1, 1, 0.78, 0.78, 0.78]);
-  const avatarY = useTransform(scrollYProgress, [0.20, 0.32], [0, 80]);
-  const avatarX = useTransform(scrollYProgress, [0.58, 0.72], ['0%', '-30%']);
+  const avatarScale = useTransform(
+    scrollYProgress,
+    isMobile ? [0, 0.20, 0.40, 1.0] : [0, 0.20, 0.32, 0.58, 0.70],
+    isMobile ? [1, 1, 0.85, 0.85] : [1, 1, 0.78, 0.78, 0.78],
+  );
+  const avatarY = useTransform(scrollYProgress, [0.20, 0.32], [0, isMobile ? 40 : 80]);
+  const avatarX = useTransform(
+    scrollYProgress,
+    [0.58, 0.72],
+    isMobile ? ['0%', '0%'] : ['0%', '-30%'],
+  );
   const avatarGlowOpacity = useTransform(scrollYProgress, [0.24, 0.32, 0.90, 1.0], [0, 0.4, 0.4, 0]);
 
   const titleOpacity = useTransform(scrollYProgress, [0.34, 0.40, 0.48, 0.52], [0, 1, 1, 0]);
@@ -94,8 +111,16 @@ export default function Landing() {
   // Persistent name near character — appears after hero name fades, never fades out
   const persistentNameOpacity = useTransform(scrollYProgress, [0.22, 0.30], [0, 1]);
 
-  const tiredOpacity = useTransform(scrollYProgress, [0.52, 0.58], [0, 1]);
-  const knowTextOpacity = useTransform(scrollYProgress, [0.72, 0.78], [0, 1]);
+  const tiredOpacity = useTransform(
+    scrollYProgress,
+    isMobile ? [0.40, 0.50] : [0.52, 0.58],
+    [0, 1],
+  );
+  const knowTextOpacity = useTransform(
+    scrollYProgress,
+    isMobile ? [0.55, 0.65] : [0.72, 0.78],
+    [0, 1],
+  );
   const cardsOpacity = useTransform(scrollYProgress, [0.82, 0.90], [0, 1]);
   const cardsSlideX = useTransform(scrollYProgress, [0.82, 0.92], ['100%', '0%']);
 
@@ -281,7 +306,7 @@ export default function Landing() {
            MAIN CONTENT — Scroll-Driven Cinematic Hero
          ═══════════════════════════════════════════════ */}
       <div
-        className="transition-opacity duration-[800ms]"
+        className="relative transition-opacity duration-[800ms]"
         style={{
           opacity: showIntro ? 0 : 1,
           pointerEvents: showIntro ? 'none' : 'auto',
@@ -303,8 +328,8 @@ export default function Landing() {
                 alt="Akarshan Sharma"
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'center 30%' }}
-                fetchPriority="high"
                 decoding="async"
+                loading="eager"
               />
             </motion.div>
 
@@ -411,10 +436,24 @@ export default function Landing() {
               <img
                 src="/1000103078.png"
                 alt="Akarshan"
-                className="w-full h-full object-cover select-none"
-                style={{ objectPosition: 'center 30%' }}
+                className="w-full h-full object-cover select-none md:object-[center_30%] object-[center_40%]"
                 draggable={false}
               />
+              {/* Name travels with the character */}
+              <motion.div
+                className="absolute right-[12%] bottom-[18%] md:right-[22%] md:bottom-[22%] text-right"
+                style={{ opacity: persistentNameOpacity }}
+              >
+                <p
+                  className="text-white/50 font-bold tracking-[0.3em] uppercase"
+                  style={{ fontSize: 'clamp(0.6rem, 1.4vw, 0.9rem)' }}
+                >
+                  Akarshan Sharma
+                </p>
+                <p className="text-white/25 text-[10px] tracking-[0.2em] mt-0.5">
+                  SOFTWARE ENGINEER
+                </p>
+              </motion.div>
             </motion.div>
 
             {/* ═══ Vignette — matches original dark edges ═══ */}
@@ -449,39 +488,18 @@ export default function Landing() {
               </p>
             </motion.div>
 
-            {/* ═══ Persistent name — near the character, bottom-right area ═══ */}
+
+            {/* ═══ Scene 4: "Tired of boring portfolios?" — never fades out ═══ */}
             <motion.div
               className="absolute z-[10] pointer-events-none"
               style={{
-                opacity: persistentNameOpacity,
-                right: '8%',
-                bottom: '12%',
-              }}
-            >
-              <div className="text-right">
-                <p
-                  className="text-white/50 font-bold tracking-[0.3em] uppercase"
-                  style={{ fontSize: 'clamp(0.65rem, 1.4vw, 0.95rem)' }}
-                >
-                  Akarshan Sharma
-                </p>
-                <p className="text-white/25 text-[10px] tracking-[0.2em] mt-1">
-                  SOFTWARE ENGINEER
-                </p>
-              </div>
-            </motion.div>
-
-            {/* ═══ Scene 4: "Tired of boring portfolios?" — top-left, never fades out ═══ */}
-            <motion.div
-              className="absolute z-[10] pointer-events-none hidden md:block"
-              style={{
                 opacity: tiredOpacity,
                 left: '5%',
-                top: '10%',
+                top: '6%',
               }}
             >
-              <div className="max-w-[400px] md:max-w-[500px]">
-                <h2 className="font-black leading-[1.05]" style={{ fontSize: 'clamp(2.4rem, 6vw, 4.5rem)' }}>
+              <div className="max-w-[280px] md:max-w-[500px]">
+                <h2 className="font-black leading-[1.05]" style={{ fontSize: 'clamp(1.8rem, 6vw, 4.5rem)' }}>
                   <span className="text-white">Tired </span>
                   <span className="text-white/30 font-light" style={{ fontSize: '0.55em' }}>of</span><br />
                   <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">boring</span>{' '}
@@ -491,19 +509,15 @@ export default function Landing() {
               </div>
             </motion.div>
 
-            {/* ═══ Scene 5a: "Know about me..." — center area, never fades out ═══ */}
+            {/* ═══ Scene 5a: "Know about me..." — never fades out ═══ */}
+            {/* Desktop: center-left area | Mobile: below character */}
             <motion.div
-              className="absolute z-[10] pointer-events-none hidden md:block"
-              style={{
-                opacity: knowTextOpacity,
-                left: '30%',
-                top: '25%',
-                width: '22%',
-              }}
+              className="absolute z-[10] pointer-events-none right-[5%] top-[16%] w-[45%] md:right-auto md:left-[30%] md:top-[25%] md:w-[22%]"
+              style={{ opacity: knowTextOpacity }}
             >
-              <div>
-                <p className="text-white/15 text-[10px] tracking-[0.4em] uppercase mb-3">Choose your experience</p>
-                <h2 className="font-black leading-[1.1]" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.8rem)' }}>
+              <div className="text-left">
+                <p className="text-white/15 text-[8px] md:text-[10px] tracking-[0.4em] uppercase mb-1 md:mb-3">Choose your experience</p>
+                <h2 className="font-black leading-[1.05]" style={{ fontSize: 'clamp(1.5rem, 4.5vw, 3.8rem)' }}>
                   <span className="text-white/50 font-light italic" style={{ fontSize: '0.7em' }}>know about</span><br />
                   <span className="text-white">me </span>
                   <span className="text-white/30 font-light" style={{ fontSize: '0.6em' }}>in the</span><br />
@@ -567,38 +581,9 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* ═══ Mobile: "Pick your vibe" + single-column cards (normal scroll) ═══ */}
-        <section className="md:hidden relative z-20 px-5 pt-12 pb-20 bg-[#050505]">
-          <motion.div
-            className="mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="font-black leading-[1.05] text-3xl mb-4">
-              <span className="text-white">Tired </span>
-              <span className="text-white/30 font-light text-lg">of</span><br />
-              <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">boring</span>{' '}
-              <span className="text-white italic">portfolios</span>
-              <span className="text-pink-500">?</span>
-            </h2>
-          </motion.div>
-
-          <motion.div
-            className="text-center mb-10"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <p className="text-white/25 text-xs tracking-[0.4em] uppercase mb-3">Choose your experience</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Pick your vibe</h2>
-            <div
-              className="h-px w-16 mx-auto mt-5"
-              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)' }}
-            />
-          </motion.div>
-
-          <div className="flex flex-col gap-4 max-w-md mx-auto">
+        {/* ═══ Mobile: single-column cards (normal scroll) ═══ */}
+        <section className="md:hidden relative z-20 px-4 pt-8 pb-20 bg-[#050505]">
+          <div className="grid grid-cols-1 gap-4 max-w-sm mx-auto">
             {allThemes.map((theme) => (
               <motion.div
                 key={theme.id}
@@ -607,27 +592,13 @@ export default function Landing() {
                 viewport={{ once: true, amount: 0.1 }}
                 transition={{ duration: 0.4 }}
               >
-                <ThemeCard
+                <MobileThemeCard
                   theme={theme}
-                  isHovered={hoveredTheme === theme.id}
-                  onHover={() => setHoveredTheme(theme.id)}
-                  onLeave={() => setHoveredTheme(null)}
                   onClick={() => setTheme(theme.id)}
                 />
               </motion.div>
             ))}
           </div>
-
-          <motion.p
-            className="text-xs text-white/20 mt-16 text-center"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-          >
-            {storyUnlocked
-              ? 'You unlocked Story Mode! There are more easter eggs to find...'
-              : 'Tip: There are hidden easter eggs. Try the Konami code!'}
-          </motion.p>
         </section>
       </div>
     </div>
@@ -724,6 +695,43 @@ function ThemeCard({
         </p>
       </div>
     </motion.button>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Mobile Theme Card — uniform size, simple layout
+   ═══════════════════════════════════════════════ */
+function MobileThemeCard({ theme, onClick }: { theme: ThemeOption; onClick: () => void }) {
+  return (
+    <button
+      className="group relative rounded-xl overflow-hidden cursor-pointer text-left w-full"
+      style={{
+        background: `linear-gradient(165deg, ${theme.color}12 0%, rgba(10,10,10,0.95) 50%, ${theme.color}08 100%)`,
+        border: `1px solid rgba(255,255,255,0.08)`,
+      }}
+      onClick={onClick}
+    >
+      {theme.hidden && (
+        <div className="absolute top-2 right-2 z-20 bg-amber-500/20 text-amber-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-amber-500/30">
+          SECRET
+        </div>
+      )}
+
+      <div className="relative rounded-t-xl overflow-hidden h-[120px]">
+        <ThemePreview id={theme.id} color={theme.color} />
+      </div>
+
+      <div className="p-4 pt-3">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-lg">{theme.icon}</span>
+          <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: theme.color }}>
+            {theme.label}
+          </span>
+        </div>
+        <h3 className="text-base font-bold text-white mb-1 leading-tight">{theme.question}</h3>
+        <p className="text-xs text-white/35 leading-snug">{theme.description}</p>
+      </div>
+    </button>
   );
 }
 
