@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStore } from '../store/useStore';
+import { SwipeOverlay, useIsMobile } from '../components/TouchControls';
 
 interface Point {
   x: number;
@@ -7,7 +8,7 @@ interface Point {
 }
 
 interface SnakeGameProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -25,6 +26,7 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
   const [speed, setSpeed] = useState(150);
   const dirRef = useRef(direction);
   const setHighScore = useStore((s) => s.setHighScore);
+  const isMobile = useIsMobile();
 
   const spawnFood = useCallback((snakeBody: Point[]) => {
     let newFood: Point;
@@ -49,6 +51,22 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
     setGameStarted(true);
     spawnFood(initial);
   }, [spawnFood]);
+
+  const handleSwipe = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
+    if (!gameStarted || gameOver) return;
+    const dirMap = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+    const newDir = dirMap[dir];
+    const current = dirRef.current;
+    if (dir === 'up' || dir === 'down') {
+      if (current.y === 0) { dirRef.current = newDir; setDirection(newDir); }
+    } else {
+      if (current.x === 0) { dirRef.current = newDir; setDirection(newDir); }
+    }
+  }, [gameStarted, gameOver]);
+
+  const handleTap = useCallback(() => {
+    if (!gameStarted || gameOver) resetGame();
+  }, [gameStarted, gameOver, resetGame]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -131,10 +149,10 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
     }
   }, [gameOver, score, setHighScore]);
 
-  const isGameBoy = variant === 'gameboy';
+  const isArcade = variant === 'arcade';
 
-  // ── GameBoy Variant ──
-  if (isGameBoy) {
+  // ── Arcade Variant ──
+  if (isArcade) {
     const CELL = 'calc(100% / 20)'; // Each cell = 5% of container
     return (
       <div className="p-3 flex flex-col h-full">
@@ -151,11 +169,11 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
         {/* Game Grid wrapper — flex-1 claims remaining space, grid sizes itself via aspect-ratio */}
         <div className="flex-1 min-h-0 flex items-center justify-center">
           <div
-            className="border border-[#306230] relative w-full"
+            className="border border-[rgba(0,240,255,0.2)] relative w-full bg-[#0a0a1a]"
             style={{ aspectRatio: '1', maxHeight: '100%' }}
           >
             {!gameStarted && !gameOver && (
-              <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 z-10">
+              <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 z-10 text-[#00f0ff]">
                 <p className="text-xl font-bold">🐍 SNAKE</p>
                 <p className="text-sm">Catch the tech logos!</p>
                 <p className="text-sm animate-pulse">Press ENTER to start</p>
@@ -163,7 +181,7 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
             )}
 
             {gameOver && (
-              <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-[#9bbc0f]/90 z-10">
+              <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-[#0a0a1a]/90 z-10 text-[#00f0ff]">
                 <p className="text-xl font-bold">GAME OVER</p>
                 <p className="text-base">Score: {score}</p>
                 <p className="text-sm animate-pulse">Press ENTER to retry</p>
@@ -182,14 +200,14 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
                       top: `${(segment.y / GRID_SIZE) * 100}%`,
                       width: CELL,
                       height: CELL,
-                      backgroundColor: i === 0 ? '#0f380f' : '#306230',
+                      backgroundColor: i === 0 ? '#00f0ff' : '#00c0cc',
                     }}
                   />
                 ))}
 
                 {/* Food */}
                 <div
-                  className="absolute flex items-center justify-center"
+                  className="absolute flex items-center justify-center bg-[#ff00aa]"
                   style={{
                     left: `${(food.x / GRID_SIZE) * 100}%`,
                     top: `${(food.y / GRID_SIZE) * 100}%`,
@@ -202,10 +220,16 @@ export default function SnakeGame({ variant, onExit }: SnakeGameProps) {
                 </div>
               </>
             )}
+
+            {isMobile && (
+              <SwipeOverlay onSwipe={handleSwipe} onTap={handleTap} />
+            )}
           </div>
         </div>
 
-        <p className="text-xs text-center mt-2 opacity-50">Arrow keys / WASD to move • ESC to exit</p>
+        <p className="text-xs text-center mt-2 opacity-50">
+          {isMobile ? 'Swipe to move' : 'Arrow keys / WASD to move'} • ESC to exit
+        </p>
       </div>
     );
   }

@@ -40,9 +40,9 @@ const themes: ThemeOption[] = [
     description: 'Chat with an AI version of me',
   },
   {
-    id: 'gameboy', label: 'GameBoy', question: 'Are you a Gamer?',
-    icon: '🎮', color: '#9bbc0f', gradient: 'from-lime-900 to-yellow-600',
-    description: 'Play through my portfolio RPG style',
+    id: 'arcade', label: 'Arcade', question: 'Are you a Gamer?',
+    icon: '🕹️', color: '#00f0ff', gradient: 'from-purple-900 to-cyan-600',
+    description: 'Play through my portfolio in a neon arcade',
   },
 ];
 
@@ -646,36 +646,32 @@ function ThemePreview({ id, color }: { id: string; color: string }) {
         </div>
       );
 
-    /* ── GameBoy: retro pixel screen ── */
-    case 'gameboy':
+    /* ── Arcade: neon cyberpunk screen ── */
+    case 'arcade':
       return (
-        <div className="w-full h-full flex items-center justify-center" style={{ background: '#2d2d2d' }}>
-          {/* GameBoy screen */}
-          <div className="w-[85%] h-[90%] rounded-lg flex flex-col items-center justify-center p-2" style={{ background: '#9bbc0f' }}>
-            {/* Pixel art — simple RPG menu */}
-            <div className="w-full flex-1 flex flex-col justify-center gap-1 px-3">
-              <div className="text-[8px] font-bold text-[#0f380f] text-center mb-1 tracking-wider" style={{ fontFamily: 'monospace' }}>
-                ◆ PORTFOLIO QUEST ◆
+        <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: '#0a0a1a' }}>
+          <div className="text-[8px] font-bold text-center mb-2 tracking-[0.2em]" style={{ fontFamily: 'monospace', color: '#00f0ff', textShadow: '0 0 8px #00f0ff80' }}>
+            ARCADE QUEST
+          </div>
+          <div className="w-[80%] flex flex-col gap-1">
+            {['▸ STATS', '  QUESTS', '  GAMES', '  CONTACT'].map((item, i) => (
+              <div
+                key={i}
+                className="text-[7px] text-center rounded px-2 py-0.5"
+                style={{
+                  fontFamily: 'monospace',
+                  color: i === 0 ? '#0a0a1a' : '#00f0ff',
+                  background: i === 0 ? '#00f0ff' : 'transparent',
+                  border: i === 0 ? 'none' : '1px solid #00f0ff30',
+                  textShadow: i !== 0 ? '0 0 4px #00f0ff40' : 'none',
+                }}
+              >
+                {item}
               </div>
-              {['▸ ABOUT ME', '  SKILLS', '  PROJECTS', '  MINI GAMES'].map((item, i) => (
-                <div
-                  key={i}
-                  className="text-[7px] text-center"
-                  style={{
-                    fontFamily: 'monospace',
-                    color: i === 0 ? '#0f380f' : '#306230',
-                  }}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-            {/* Bottom controls hint */}
-            <div className="flex items-center gap-3 mt-1">
-              <div className="text-[5px] text-[#306230]" style={{ fontFamily: 'monospace' }}>
-                [A] SELECT &nbsp; [B] BACK
-              </div>
-            </div>
+            ))}
+          </div>
+          <div className="text-[5px] mt-2" style={{ color: '#ff00aa80', fontFamily: 'monospace' }}>
+            INSERT COIN TO PLAY
           </div>
         </div>
       );

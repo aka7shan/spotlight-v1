@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 
 interface MemoryMatchProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -36,7 +36,7 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
   const [isChecking, setIsChecking] = useState(false);
   const setHighScore = useStore((s) => s.setHighScore);
 
-  const isGameBoy = variant === 'gameboy';
+  const isArcade = variant === 'arcade';
   const totalPairs = TECH_PAIRS.length;
 
   const initGame = useCallback(() => {
@@ -142,14 +142,14 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
 
   return (
     <div
-      className={isGameBoy ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
-      style={!isGameBoy ? { height: 'calc(100vh - 14rem)' } : undefined}
+      className={isArcade ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
+      style={!isArcade ? { height: 'calc(100vh - 14rem)' } : undefined}
     >
       <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={isGameBoy ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— MEMORY MATCH —</p>
+        <p className={isArcade ? 'text-cyan-400 text-xs' : 'text-green-400 text-xs'}>— MEMORY MATCH —</p>
         <button
           onClick={onExit}
-          className={isGameBoy ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}
+          className={isArcade ? 'text-cyan-400 text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}
         >
           BACK
         </button>
@@ -157,9 +157,9 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
 
       {!gameStarted && !gameOver && (
         <div className="text-center flex-1 flex flex-col items-center justify-center gap-3">
-          <p className={`font-bold ${isGameBoy ? 'text-xl' : 'text-lg text-green-400'}`}>🧠 MEMORY MATCH</p>
-          <p className={isGameBoy ? 'text-sm mt-2' : 'text-xs text-green-600 mt-2'}>Match the tech icon pairs!</p>
-          <p className={`animate-pulse mt-4 ${isGameBoy ? 'text-sm' : 'text-xs text-green-500'}`}>
+          <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>🧠 MEMORY MATCH</p>
+          <p className={isArcade ? 'text-gray-400 text-sm mt-2' : 'text-xs text-green-600 mt-2'}>Match the tech icon pairs!</p>
+          <p className={`animate-pulse mt-4 ${isArcade ? 'text-cyan-400 text-sm' : 'text-xs text-green-500'}`}>
             Press ENTER to start
           </p>
         </div>
@@ -168,29 +168,29 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
       {gameStarted && (
         <div className="flex-1 flex flex-col min-h-0">
           {/* Stats */}
-          <div className={`flex justify-between text-sm mb-2 shrink-0 ${isGameBoy ? '' : 'text-green-400'}`}>
+          <div className={`flex justify-between text-sm mb-2 shrink-0 ${isArcade ? 'text-cyan-400' : 'text-green-400'}`}>
             <span>⏱️ {elapsed}s</span>
             <span>Moves: {moves}</span>
             <span>Matched: {matches}/{totalPairs}</span>
           </div>
 
           {/* Card Grid - fills available space, rows sized to fit */}
-          <div className={`grid grid-cols-4 grid-rows-4 gap-2 mx-auto flex-1 min-h-0 w-full ${isGameBoy ? '' : 'max-w-[500px]'}`}>
+          <div className={`grid grid-cols-4 grid-rows-4 gap-2 mx-auto flex-1 min-h-0 w-full ${isArcade ? '' : 'max-w-[500px]'}`}>
             {cards.map((card) => (
               <button
                 key={card.id}
                 onClick={() => flipCard(card.id)}
                 className={`rounded flex items-center justify-center text-2xl cursor-pointer transition-all duration-200 min-h-0 ${
                   card.isMatched
-                    ? (isGameBoy
-                        ? 'bg-[#0f380f]/30 border border-[#306230]/30'
+                    ? (isArcade
+                        ? 'bg-cyan-900/30 border border-cyan-700/30'
                         : 'bg-green-900/30 border border-green-700/30')
                     : card.isFlipped
-                    ? (isGameBoy
-                        ? 'bg-[#0f380f] border-2 border-[#306230] scale-105'
+                    ? (isArcade
+                        ? 'bg-[#0a0a1a] border-2 border-cyan-400 scale-105'
                         : 'bg-green-900 border-2 border-green-500 scale-105')
-                    : (isGameBoy
-                        ? 'bg-[#306230] border border-[#0f380f] hover:bg-[#306230]/80 active:scale-95'
+                    : (isArcade
+                        ? 'bg-[#1a1a2e] border border-cyan-800 hover:bg-[#1a1a3e] active:scale-95'
                         : 'bg-green-800 border border-green-600 hover:bg-green-700 active:scale-95')
                 }`}
                 disabled={card.isMatched || card.isFlipped || isChecking}
@@ -198,7 +198,7 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
                 {card.isFlipped || card.isMatched ? (
                   <span className={card.isMatched ? 'opacity-40' : ''}>{card.emoji}</span>
                 ) : (
-                  <span className={isGameBoy ? 'text-[#9bbc0f] text-base' : 'text-green-400 text-xs'}>?</span>
+                  <span className={isArcade ? 'text-cyan-400 text-xs' : 'text-green-400 text-xs'}>?</span>
                 )}
               </button>
             ))}
@@ -206,15 +206,15 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
 
           {gameOver && (
             <div className={`text-center mt-2 p-2 border rounded shrink-0 ${
-              isGameBoy ? 'border-[#306230]' : 'border-green-800 bg-black/50'
+              isArcade ? 'border-cyan-800 bg-[#0a0a1a]/80' : 'border-green-800 bg-black/50'
             }`}>
-              <p className={`font-bold ${isGameBoy ? 'text-lg' : 'text-lg text-yellow-400'}`}>🎉 ALL MATCHED!</p>
-              <div className={`mt-2 space-y-1 ${isGameBoy ? 'text-sm' : 'text-sm text-green-400'}`}>
+              <p className={`font-bold ${isArcade ? 'text-lg text-cyan-400' : 'text-lg text-yellow-400'}`}>🎉 ALL MATCHED!</p>
+              <div className={`mt-2 space-y-1 ${isArcade ? 'text-sm text-cyan-400' : 'text-sm text-green-400'}`}>
                 <p>Time: {elapsed}s</p>
                 <p>Moves: {moves}</p>
                 <p>Score: {Math.max(0, 1000 - moves * 10 - elapsed * 2)}</p>
               </div>
-              <p className={`animate-pulse mt-2 ${isGameBoy ? 'text-sm' : 'text-xs text-green-500'}`}>
+              <p className={`animate-pulse mt-2 ${isArcade ? 'text-sm text-gray-400' : 'text-xs text-green-500'}`}>
                 Press ENTER to play again • ESC to exit
               </p>
             </div>
@@ -222,7 +222,7 @@ export default function MemoryMatch({ variant, onExit }: MemoryMatchProps) {
         </div>
       )}
 
-      <p className={`text-center mt-1 shrink-0 ${isGameBoy ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
+      <p className={`text-center mt-1 shrink-0 ${isArcade ? 'text-cyan-800 text-xs' : 'text-green-700 text-xs'}`}>
         Click cards to flip • Match all pairs • ESC to exit
       </p>
     </div>

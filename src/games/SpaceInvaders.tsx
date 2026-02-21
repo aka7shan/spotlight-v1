@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { VirtualJoystick, ActionButton, LandscapeWrapper, useIsMobile } from '../components/TouchControls';
+
+function simulateKeyDown(key: string) {
+  window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+}
+function simulateKeyUp(key: string) {
+  window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
+}
 
 interface SpaceInvadersProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -45,7 +53,8 @@ export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
   const animRef = useRef<number>(0);
   const keysRef = useRef<Set<string>>(new Set());
 
-  const isGameBoy = variant === 'gameboy';
+  const isArcade = variant === 'arcade';
+  const isMobile = useIsMobile();
 
   const gameState = useRef({
     playerX: GAME_W / 2 - PLAYER_W / 2,
@@ -129,8 +138,8 @@ export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const colors = isGameBoy
-      ? { bg: '#9bbc0f', fg: '#0f380f', mid: '#306230', accent: '#8bac0f' }
+    const colors = isArcade
+      ? { bg: '#0a0a1a', fg: '#00f0ff', mid: '#ff00aa', accent: '#39ff14' }
       : { bg: '#000000', fg: '#00ff00', mid: '#00aa00', accent: '#005500' };
 
     const gameLoop = () => {
@@ -284,16 +293,13 @@ export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
 
     animRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [gameStarted, gameOver, isGameBoy, setHighScore]);
+  }, [gameStarted, gameOver, isArcade, setHighScore]);
 
-  return (
-    <div
-      className={isGameBoy ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
-      style={!isGameBoy ? { height: 'calc(100vh - 14rem)' } : undefined}
-    >
+  const arcadeContent = (
+    <div className="p-3 flex flex-col h-full">
       <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={isGameBoy ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— SPACE INVADERS —</p>
-        <button onClick={onExit} className={isGameBoy ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
+        <p className="text-xs text-cyan-400">— SPACE INVADERS —</p>
+        <button onClick={onExit} className="text-xs text-cyan-300 cursor-pointer underline">BACK</button>
       </div>
 
       <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden">
@@ -301,31 +307,91 @@ export default function SpaceInvaders({ variant, onExit }: SpaceInvadersProps) {
           ref={canvasRef}
           width={GAME_W}
           height={GAME_H}
-          className={`border ${isGameBoy ? 'border-[#306230]' : 'border-green-800'} block w-full h-full`}
-          style={{ backgroundColor: isGameBoy ? '#9bbc0f' : '#000', imageRendering: 'pixelated', objectFit: 'contain' }}
+          className="border border-[#00f0ff30] block w-full h-full"
+          style={{ backgroundColor: '#0a0a1a', imageRendering: 'pixelated', objectFit: 'contain' }}
         />
 
         {!gameStarted && !gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isGameBoy ? '' : 'bg-black/80'}`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-green-400'}`}>👾 SPACE INVADERS</p>
-            <p className={isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-600'}>Defend Earth from the bugs!</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>Press ENTER to start</p>
+          <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-[#0a0a1a]/90">
+            <p className="font-bold text-xl text-cyan-400">👾 SPACE INVADERS</p>
+            <p className="text-sm text-cyan-300">Defend Earth from the bugs!</p>
+            <p className="animate-pulse text-sm text-cyan-300">Press ENTER to start</p>
           </div>
         )}
 
         {gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isGameBoy ? 'bg-[#9bbc0f]/90' : 'bg-black/80'}`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-green-400'}`}>
+          <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-[#0a0a1a]/90">
+            <p className="font-bold text-xl text-cyan-400">
               {won ? '🏆 VICTORY!' : '💀 GAME OVER'}
             </p>
-            <p className={isGameBoy ? 'text-base text-[#306230]' : 'text-sm text-green-400'}>Score: {score}</p>
-            <p className={isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-gray-500'}>Best: {useStore.getState().highScores.invaders || 0}</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>ENTER to retry • ESC to exit</p>
+            <p className="text-base text-cyan-300">Score: {score}</p>
+            <p className="text-sm text-cyan-400">Best: {useStore.getState().highScores.invaders || 0}</p>
+            <p className="animate-pulse text-sm text-cyan-300">ENTER to retry • ESC to exit</p>
           </div>
         )}
       </div>
 
-      <p className={`text-center mt-2 shrink-0 ${isGameBoy ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
+      {isMobile && (
+        <div className="flex items-center justify-between gap-4 py-3 shrink-0 px-2">
+          <VirtualJoystick axes="horizontal" size={100} />
+          <ActionButton
+            label="FIRE"
+            onPress={() => simulateKeyDown(' ')}
+            onRelease={() => simulateKeyUp(' ')}
+          />
+        </div>
+      )}
+
+      <p className={`text-center mt-2 shrink-0 text-xs ${isMobile ? 'text-cyan-400/80' : 'text-cyan-400/70'}`}>
+        {isMobile ? 'Joystick to move • FIRE to shoot' : '←/→ to move • SPACE/↑ to shoot • ESC to exit'}
+      </p>
+    </div>
+  );
+
+  if (isArcade) {
+    return <LandscapeWrapper>{arcadeContent}</LandscapeWrapper>;
+  }
+
+  return (
+    <div
+      className="flex flex-col"
+      style={{ height: 'calc(100vh - 14rem)' }}
+    >
+      <div className="flex items-center justify-between mb-2 shrink-0">
+        <p className="text-green-400 text-xs">— SPACE INVADERS —</p>
+        <button onClick={onExit} className="text-green-600 text-xs cursor-pointer underline">BACK</button>
+      </div>
+
+      <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden">
+        <canvas
+          ref={canvasRef}
+          width={GAME_W}
+          height={GAME_H}
+          className="border border-green-800 block w-full h-full"
+          style={{ backgroundColor: '#000', imageRendering: 'pixelated', objectFit: 'contain' }}
+        />
+
+        {!gameStarted && !gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-black/80">
+            <p className="font-bold text-lg text-green-400">👾 SPACE INVADERS</p>
+            <p className="text-xs text-green-600">Defend Earth from the bugs!</p>
+            <p className="animate-pulse text-xs text-green-500">Press ENTER to start</p>
+          </div>
+        )}
+
+        {gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 bg-black/80">
+            <p className="font-bold text-lg text-green-400">
+              {won ? '🏆 VICTORY!' : '💀 GAME OVER'}
+            </p>
+            <p className="text-sm text-green-400">Score: {score}</p>
+            <p className="text-xs text-gray-500">Best: {useStore.getState().highScores.invaders || 0}</p>
+            <p className="animate-pulse text-xs text-green-500">ENTER to retry • ESC to exit</p>
+          </div>
+        )}
+      </div>
+
+      <p className="text-center mt-2 shrink-0 text-green-700 text-xs">
         ←/→ to move • SPACE/↑ to shoot • ESC to exit
       </p>
     </div>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { VirtualJoystick, LandscapeWrapper, useIsMobile } from '../components/TouchControls';
 
 interface PongGameProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -22,7 +23,8 @@ export default function PongGame({ variant, onExit }: PongGameProps) {
   const animRef = useRef<number>(0);
   const keysRef = useRef<Set<string>>(new Set());
 
-  const isGameBoy = variant === 'gameboy';
+  const isArcade = variant === 'arcade';
+  const isMobile = useIsMobile();
 
   const gameState = useRef({
     playerY: GAME_H / 2 - PADDLE_H / 2,
@@ -94,8 +96,8 @@ export default function PongGame({ variant, onExit }: PongGameProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const colors = isGameBoy
-      ? { bg: '#9bbc0f', fg: '#0f380f', mid: '#306230', net: '#306230' }
+    const colors = isArcade
+      ? { bg: '#0a0a1a', fg: '#00f0ff', mid: '#ff00aa', net: '#00f0ff30' }
       : { bg: '#000000', fg: '#00ff00', mid: '#00aa00', net: '#005500' };
 
     const PADDLE_SPEED = 4;
@@ -208,50 +210,63 @@ export default function PongGame({ variant, onExit }: PongGameProps) {
 
     animRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [gameStarted, gameOver, isGameBoy, resetBall, setHighScore]);
+  }, [gameStarted, gameOver, isArcade, resetBall, setHighScore]);
 
-  return (
+  const content = (
     <div
-      className={isGameBoy ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
-      style={!isGameBoy ? { height: 'calc(100vh - 14rem)' } : undefined}
+      className={isArcade ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
+      style={!isArcade ? { height: 'calc(100vh - 14rem)' } : undefined}
     >
       <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={isGameBoy ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— PONG —</p>
-        <button onClick={onExit} className={isGameBoy ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
+        <p className={isArcade ? 'text-cyan-400 text-xs' : 'text-green-400 text-xs'}>— PONG —</p>
+        <button onClick={onExit} className={isArcade ? 'text-cyan-300 text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
       </div>
 
-      <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          width={GAME_W}
-          height={GAME_H}
-          className={`border ${isGameBoy ? 'border-[#306230]' : 'border-green-800'} block w-full h-full`}
-          style={{ backgroundColor: isGameBoy ? '#9bbc0f' : '#000', imageRendering: 'pixelated', objectFit: 'contain' }}
-        />
+      <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden flex-col gap-3">
+        <div className="relative flex-1 flex items-center justify-center min-h-0 w-full overflow-hidden">
+          <canvas
+            ref={canvasRef}
+            width={GAME_W}
+            height={GAME_H}
+            className={`border ${isArcade ? 'border-cyan-800' : 'border-green-800'} block w-full h-full`}
+            style={{ backgroundColor: isArcade ? '#0a0a1a' : '#000', imageRendering: 'pixelated', objectFit: 'contain' }}
+          />
 
-        {!gameStarted && !gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isGameBoy ? '' : 'bg-black/80'}`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-green-400'}`}>🏓 PONG</p>
-            <p className={isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-600'}>You vs AI — First to 5 wins!</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>Press ENTER to start</p>
-          </div>
-        )}
+          {!gameStarted && !gameOver && (
+            <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'}`}>
+              <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>🏓 PONG</p>
+              <p className={isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-600'}>You vs AI — First to 5 wins!</p>
+              <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-500'}`}>Press ENTER to start</p>
+            </div>
+          )}
 
-        {gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isGameBoy ? 'bg-[#9bbc0f]/90' : 'bg-black/80'}`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-green-400'}`}>
-              {playerScore >= 5 ? '🏆 YOU WIN!' : '💀 AI WINS'}
-            </p>
-            <p className={isGameBoy ? 'text-base text-[#306230]' : 'text-sm text-green-400'}>{playerScore} - {aiScore}</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>ENTER to retry • ESC to exit</p>
+          {gameOver && (
+            <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'}`}>
+              <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>
+                {playerScore >= 5 ? '🏆 YOU WIN!' : '💀 AI WINS'}
+              </p>
+              <p className={isArcade ? 'text-base text-cyan-300' : 'text-sm text-green-400'}>{playerScore} - {aiScore}</p>
+              <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-300' : 'text-xs text-green-500'}`}>ENTER to retry • ESC to exit</p>
+            </div>
+          )}
+        </div>
+
+        {isArcade && isMobile && (
+          <div className="flex justify-center shrink-0 py-2">
+            <VirtualJoystick axes="vertical" size={120} />
           </div>
         )}
       </div>
 
-      <p className={`text-center mt-2 shrink-0 ${isGameBoy ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
-        ↑/↓ or W/S to move • ESC to exit
+      <p className={`text-center mt-2 shrink-0 ${isArcade ? 'text-cyan-400/70 text-xs' : 'text-green-700 text-xs'}`}>
+        {isArcade && isMobile ? 'Joystick to move paddle • ESC to exit' : '↑/↓ or W/S to move • ESC to exit'}
       </p>
     </div>
   );
+
+  if (isArcade) {
+    return <LandscapeWrapper>{content}</LandscapeWrapper>;
+  }
+  return content;
 }
 

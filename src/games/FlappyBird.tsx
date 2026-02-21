@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { useIsMobile } from '../components/TouchControls';
 
 interface FlappyBirdProps {
-  variant: 'gameboy' | 'terminal';
+  variant: 'arcade' | 'terminal';
   onExit: () => void;
 }
 
@@ -29,7 +30,8 @@ export default function FlappyBird({ variant, onExit }: FlappyBirdProps) {
   const setHighScore = useStore((s) => s.setHighScore);
   const animRef = useRef<number>(0);
 
-  const isGameBoy = variant === 'gameboy';
+  const isArcade = variant === 'arcade';
+  const isMobile = useIsMobile();
 
   const gameState = useRef({
     birdY: GAME_H / 2,
@@ -56,6 +58,14 @@ export default function FlappyBird({ variant, onExit }: FlappyBirdProps) {
     setGameOver(false);
     setGameStarted(true);
   }, []);
+
+  const handleCanvasTap = useCallback(() => {
+    if (!gameStarted || gameOver) {
+      resetGame();
+    } else {
+      flap();
+    }
+  }, [gameStarted, gameOver, resetGame, flap]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -87,8 +97,8 @@ export default function FlappyBird({ variant, onExit }: FlappyBirdProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const colors = isGameBoy
-      ? { bg: '#9bbc0f', bird: '#0f380f', pipe: '#306230', text: '#0f380f', ground: '#306230' }
+    const colors = isArcade
+      ? { bg: '#0a0a1a', bird: '#00f0ff', pipe: '#ff00aa', text: '#00f0ff', ground: '#39ff14' }
       : { bg: '#000000', bird: '#00ff00', pipe: '#00aa00', text: '#00ff00', ground: '#005500' };
 
     const gameLoop = () => {
@@ -187,16 +197,16 @@ export default function FlappyBird({ variant, onExit }: FlappyBirdProps) {
 
     animRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [gameStarted, gameOver, isGameBoy, setHighScore]);
+  }, [gameStarted, gameOver, isArcade, setHighScore]);
 
   return (
     <div
-      className={isGameBoy ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
-      style={!isGameBoy ? { height: 'calc(100vh - 14rem)' } : undefined}
+      className={isArcade ? 'p-3 flex flex-col h-full' : 'flex flex-col'}
+      style={!isArcade ? { height: 'calc(100vh - 14rem)' } : undefined}
     >
       <div className="flex items-center justify-between mb-2 shrink-0">
-        <p className={isGameBoy ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— FLAPPY BIRD —</p>
-        <button onClick={onExit} className={isGameBoy ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
+        <p className={isArcade ? 'text-xs opacity-70' : 'text-green-400 text-xs'}>— FLAPPY BIRD —</p>
+        <button onClick={onExit} className={isArcade ? 'text-xs cursor-pointer underline' : 'text-green-600 text-xs cursor-pointer underline'}>BACK</button>
       </div>
 
       <div className="relative flex-1 flex items-center justify-center min-h-0 overflow-hidden">
@@ -204,32 +214,40 @@ export default function FlappyBird({ variant, onExit }: FlappyBirdProps) {
           ref={canvasRef}
           width={GAME_W}
           height={GAME_H}
-          className={`border ${isGameBoy ? 'border-[#306230]' : 'border-green-800'} block w-full h-full cursor-pointer`}
-          style={{ backgroundColor: isGameBoy ? '#9bbc0f' : '#000', imageRendering: 'pixelated', objectFit: 'contain' }}
-          onClick={gameStarted && !gameOver ? flap : undefined}
-          onTouchStart={gameStarted && !gameOver ? (e) => { e.preventDefault(); flap(); } : undefined}
+          className={`border ${isArcade ? 'border-cyan-800' : 'border-green-800'} block w-full h-full cursor-pointer`}
+          style={{ backgroundColor: isArcade ? '#0a0a1a' : '#000', imageRendering: 'pixelated', objectFit: 'contain' }}
+          onClick={handleCanvasTap}
+          onTouchStart={(e) => { e.preventDefault(); handleCanvasTap(); }}
         />
 
         {!gameStarted && !gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isGameBoy ? '' : 'bg-black/80'}`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-green-400'}`}>🐦 FLAPPY BIRD</p>
-            <p className={isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-600'}>Tap or SPACE to flap!</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>Press ENTER to start</p>
+          <div
+            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'} cursor-pointer`}
+            onClick={handleCanvasTap}
+            onTouchStart={(e) => { e.preventDefault(); handleCanvasTap(); }}
+          >
+            <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-green-400'}`}>🐦 FLAPPY BIRD</p>
+            <p className={isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-600'}>Tap or SPACE to flap!</p>
+            <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-500'}`}>Press ENTER to start</p>
           </div>
         )}
 
         {gameOver && (
-          <div className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isGameBoy ? 'bg-[#9bbc0f]/90' : 'bg-black/80'}`}>
-            <p className={`font-bold ${isGameBoy ? 'text-xl text-[#306230]' : 'text-lg text-red-400'}`}>GAME OVER</p>
-            <p className={isGameBoy ? 'text-base text-[#306230]' : 'text-sm text-green-400'}>Score: {score}</p>
-            <p className={isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-gray-500'}>Best: {useStore.getState().highScores.flappy || 0}</p>
-            <p className={`animate-pulse ${isGameBoy ? 'text-sm text-[#306230]' : 'text-xs text-green-500'}`}>ENTER to retry • ESC to exit</p>
+          <div
+            className={`absolute inset-0 flex items-center justify-center flex-col gap-3 ${isArcade ? 'bg-[#0a0a1a]/90' : 'bg-black/80'} cursor-pointer`}
+            onClick={handleCanvasTap}
+            onTouchStart={(e) => { e.preventDefault(); handleCanvasTap(); }}
+          >
+            <p className={`font-bold ${isArcade ? 'text-xl text-cyan-400' : 'text-lg text-red-400'}`}>GAME OVER</p>
+            <p className={isArcade ? 'text-base text-cyan-400' : 'text-sm text-green-400'}>Score: {score}</p>
+            <p className={isArcade ? 'text-sm text-cyan-400' : 'text-xs text-gray-500'}>Best: {useStore.getState().highScores.flappy || 0}</p>
+            <p className={`animate-pulse ${isArcade ? 'text-sm text-cyan-400' : 'text-xs text-green-500'}`}>ENTER to retry • ESC to exit</p>
           </div>
         )}
       </div>
 
-      <p className={`text-center mt-2 shrink-0 ${isGameBoy ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
-        SPACE/↑/tap to flap • ESC to exit
+      <p className={`text-center mt-2 shrink-0 ${isArcade ? 'text-xs opacity-50' : 'text-green-700 text-xs'}`}>
+        {isMobile ? 'Tap to flap • Tap to start/retry' : 'SPACE/↑/tap to flap • ESC to exit'}
       </p>
     </div>
   );
