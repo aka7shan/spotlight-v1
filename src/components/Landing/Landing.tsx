@@ -510,7 +510,7 @@ export default function Landing() {
               </div>
             </motion.div>
 
-            {/* ═══ Scene 5a: "Know about me..." — never fades out ═══ */}
+            {/* ═══ Scene 5a: "Know about me..."*/}
             {/* Desktop: center-left area | Mobile: below character */}
             <motion.div
               className="absolute z-[10] pointer-events-none right-[5%] top-[16%] w-[45%] md:right-auto md:left-[30%] md:top-[25%] md:w-[22%]"
