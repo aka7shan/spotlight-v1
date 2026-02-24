@@ -490,7 +490,7 @@ export default function Landing() {
             </motion.div>
 
 
-            {/* ═══ Scene 4: "Tired of boring portfolios?" — never fades out ═══ */}
+            {/* ═══ Scene 4: "Tired of boring portfolios?" */}
             <motion.div
               className="absolute z-[10] pointer-events-none"
               style={{
