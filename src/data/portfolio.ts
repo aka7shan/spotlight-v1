@@ -173,8 +173,8 @@ export const funFacts = [
   "My first program was a 'Hello World' in C++ back in high school.",
   "I've reviewed over 500+ pull requests in my career.",
   "I can type at 90+ WPM — verified on MonkeyType!",
-  // "My go-to debugging strategy: console.log('HERE 1'), console.log('HERE 2')...",
-  // "I believe tabs > spaces. Fight me.",
+  "My go-to debugging strategy: console.log('HERE 1'), console.log('HERE 2')...",
+  "I believe tabs > spaces. Fight me.",
   "Coffee consumption is directly proportional to code quality. Prove me wrong.",
   "I once wrote a script to automate ordering lunch. Peak engineering.",
 ];
