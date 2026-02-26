@@ -176,7 +176,7 @@ export const funFacts = [
   "My go-to debugging strategy: console.log('HERE 1'), console.log('HERE 2')...",
   "I believe tabs > spaces. Fight me.",
   "Coffee consumption is directly proportional to code quality. Prove me wrong.",
-  "I once wrote a script to automate ordering lunch. Peak engineering.",
+  // "I once wrote a script to automate ordering lunch. Peak engineering.",
 ];
 
 // Terminal commands help
