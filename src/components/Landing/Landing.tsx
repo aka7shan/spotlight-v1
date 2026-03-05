@@ -325,12 +325,12 @@ export default function Landing() {
               style={{ opacity: heroBgOpacity }}
             >
               <img
-                src="/homepage.png"
+                src="/homepage.webp"
                 alt="Akarshan Sharma"
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'center 30%' }}
                 decoding="async"
-                loading="eager"
+                fetchPriority="high"
               />
             </motion.div>
 
@@ -435,10 +435,12 @@ export default function Landing() {
               style={{ scale: avatarScale, y: avatarY, x: avatarX }}
             >
               <img
-                src="/1000103078.png"
+                src="/1000103078.webp"
                 alt="Akarshan"
                 className="w-full h-full object-cover select-none md:object-[center_30%] object-[center_40%]"
                 draggable={false}
+                decoding="async"
+                fetchPriority="high"
               />
               {/* Name travels with the character */}
               <motion.div
@@ -583,7 +585,7 @@ export default function Landing() {
         </div>
 
         {/* ═══ Mobile: single-column cards (normal scroll) ═══ */}
-        <section className="md:hidden relative z-20 px-4 pt-8 pb-20 bg-[#050505]">
+        <section className="md:hidden relative z-20 px-4 pt-8 pb-12 bg-[#050505]">
           <div className="grid grid-cols-1 gap-4 max-w-sm mx-auto">
             {allThemes.map((theme) => (
               <motion.div
@@ -599,6 +601,77 @@ export default function Landing() {
                 />
               </motion.div>
             ))}
+          </div>
+        </section>
+
+        {/* ═══ Contact / Hire-Me CTA ═══ */}
+        <section className="relative z-20 bg-[#050505] py-16 md:py-24 px-6">
+          <motion.div
+            className="max-w-2xl mx-auto text-center"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6 }}
+          >
+            <p className="text-white/20 text-xs tracking-[0.4em] uppercase mb-4">Let's Connect</p>
+            <h2
+              className="font-black text-white mb-4 leading-tight"
+              style={{ fontSize: 'clamp(1.8rem, 5vw, 3.5rem)' }}
+            >
+              Got a project in mind?
+            </h2>
+            <p className="text-white/40 text-sm md:text-base mb-10 max-w-md mx-auto leading-relaxed">
+              I'm always open to discussing new opportunities, collaborations, or just a friendly chat about tech.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+              <motion.a
+                href="mailto:akarshan915719@gmail.com"
+                className="group flex items-center gap-3 px-6 py-3.5 bg-white text-black font-bold rounded-xl text-sm tracking-wide hover:bg-white/90 transition-colors"
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <span className="text-lg">📧</span>
+                Say Hello
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </motion.a>
+              <motion.a
+                href="https://www.linkedin.com/in/akarshan-sharma-020320208"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-6 py-3.5 border border-white/15 text-white/70 rounded-xl text-sm tracking-wide hover:border-blue-400/40 hover:text-blue-400 transition-colors"
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <span className="text-lg">💼</span>
+                LinkedIn
+              </motion.a>
+            </div>
+
+            <div className="flex items-center justify-center gap-6 text-white/20 text-xs">
+              <a
+                href="mailto:akarshan915719@gmail.com"
+                className="hover:text-white/50 transition-colors"
+              >
+                akarshan915719@gmail.com
+              </a>
+              <span className="w-1 h-1 rounded-full bg-white/10" />
+              <a
+                href="https://leetcode.com/aka7shan"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white/50 transition-colors"
+              >
+                LeetCode
+              </a>
+            </div>
+          </motion.div>
+
+          {/* Footer line */}
+          <div className="mt-16 pt-6 border-t border-white/5 text-center">
+            <p className="text-white/10 text-xs font-mono">
+              Built with React + Tailwind + Framer Motion &middot; Akarshan Sharma © {new Date().getFullYear()}
+            </p>
           </div>
         </section>
       </div>

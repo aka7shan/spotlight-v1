@@ -1,16 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useStore } from './store/useStore';
 import type { ThemeType } from './store/useStore';
 import Landing from './components/Landing/Landing';
 
-import NetflixTheme from './themes/Netflix/NetflixTheme';
-import TerminalTheme from './themes/Terminal/TerminalTheme';
-import GPTTheme from './themes/GPT/GPTTheme';
-import InstagramTheme from './themes/Instagram/InstagramTheme';
-import ArcadeTheme from './themes/Arcade/ArcadeTheme';
-// import StoryTheme from './themes/Story/StoryTheme';
+const NetflixTheme = lazy(() => import('./themes/Netflix/NetflixTheme'));
+const TerminalTheme = lazy(() => import('./themes/Terminal/TerminalTheme'));
+const GPTTheme = lazy(() => import('./themes/GPT/GPTTheme'));
+const InstagramTheme = lazy(() => import('./themes/Instagram/InstagramTheme'));
+const ArcadeTheme = lazy(() => import('./themes/Arcade/ArcadeTheme'));
+// const StoryTheme = lazy(() => import('./themes/Story/StoryTheme'));
+const NotFound = lazy(() => import('./components/NotFound.tsx'));
 
 const routeToTheme: Record<string, ThemeType> = {
   '/': 'landing',
@@ -21,6 +22,17 @@ const routeToTheme: Record<string, ThemeType> = {
   '/arcade': 'arcade',
   // '/story': 'story',
 };
+
+function ThemeLoader() {
+  return (
+    <div className="fixed inset-0 bg-[#050505] flex items-center justify-center z-50">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-white/40 text-sm tracking-widest uppercase">Loading</p>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const location = useLocation();
@@ -63,26 +75,28 @@ function App() {
   }, [location.pathname, setTheme]);
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <Routes location={location}>
-          <Route path="/" element={<Landing />} />
-          <Route path="/netflix" element={<NetflixTheme />} />
-          <Route path="/terminal" element={<TerminalTheme />} />
-          <Route path="/gpt" element={<GPTTheme />} />
-          <Route path="/instagram" element={<InstagramTheme />} />
-          <Route path="/arcade" element={<ArcadeTheme />} />
-          {/* <Route path="/story" element={<StoryTheme />} /> */}
-          <Route path="*" element={<Landing />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <Suspense fallback={<ThemeLoader />}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Routes location={location}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/netflix" element={<NetflixTheme />} />
+            <Route path="/terminal" element={<TerminalTheme />} />
+            <Route path="/gpt" element={<GPTTheme />} />
+            <Route path="/instagram" element={<InstagramTheme />} />
+            <Route path="/arcade" element={<ArcadeTheme />} />
+            {/* <Route path="/story" element={<StoryTheme />} /> */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </motion.div>
+      </AnimatePresence>
+    </Suspense>
   );
 }
 
