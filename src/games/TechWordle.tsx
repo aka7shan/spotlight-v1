@@ -18,7 +18,7 @@ const TECH_WORDS = [
   'MERGE', 'PATCH', 'SHELL', 'SWIFT', 'SCALA',
   'KAFKA', 'SPARK', 'FLOAT', 'PRINT', 'INPUT',
   'WHILE', 'BREAK', 'CATCH', 'THROW', 'SUPER',
-  'YIELD', 'CONST', 'FINAL', 'FIELD', 'PARAM',
+  'YIELD', 'CONST', 'FINAL', 'FIELD', 'PARAM', 'ARROW',
 ];
 
 // Common 5-letter English words
