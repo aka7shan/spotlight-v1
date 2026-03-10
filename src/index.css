@@ -101,3 +101,29 @@ body {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ─── Landing Color Mode (CSS Custom Properties) ─── */
+.landing-root {
+  --lr-bg: #050505;
+  --lr-bg-alt: #0a0a0a;
+  --lr-card: rgba(255, 255, 255, 0.02);
+  --lr-t: 255, 255, 255;
+  --lr-b: 255, 255, 255;
+  --lr-game-card: #0a0a1a;
+  --lr-btn-bg: #ffffff;
+  --lr-btn-text: #000000;
+  --lr-invert: 0;
+  transition: background-color 0.4s ease;
+}
+
+.landing-root.light {
+  --lr-bg: #f5f5f5;
+  --lr-bg-alt: #ffffff;
+  --lr-card: rgba(0, 0, 0, 0.04);
+  --lr-t: 17, 17, 17;
+  --lr-b: 0, 0, 0;
+  --lr-game-card: #e6e6f0;
+  --lr-btn-bg: #111111;
+  --lr-btn-text: #ffffff;
+  --lr-invert: 1;
+}

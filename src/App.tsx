@@ -1,17 +1,16 @@
 import { useEffect, useRef, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useStore } from './store/useStore';
+
 import type { ThemeType } from './store/useStore';
 import Landing from './components/Landing/Landing';
+import GamesPage from './pages/GamesPage';
 
 const NetflixTheme = lazy(() => import('./themes/Netflix/NetflixTheme'));
 const TerminalTheme = lazy(() => import('./themes/Terminal/TerminalTheme'));
 const GPTTheme = lazy(() => import('./themes/GPT/GPTTheme'));
 const InstagramTheme = lazy(() => import('./themes/Instagram/InstagramTheme'));
-const ArcadeTheme = lazy(() => import('./themes/Arcade/ArcadeTheme'));
-// const StoryTheme = lazy(() => import('./themes/Story/StoryTheme'));
-const NotFound = lazy(() => import('./components/NotFound.tsx'));
+const NotFound = lazy(() => import('./components/NotFound'));
 
 const routeToTheme: Record<string, ThemeType> = {
   '/': 'landing',
@@ -19,8 +18,6 @@ const routeToTheme: Record<string, ThemeType> = {
   '/terminal': 'terminal',
   '/gpt': 'gpt',
   '/instagram': 'instagram',
-  '/arcade': 'arcade',
-  // '/story': 'story',
 };
 
 function ThemeLoader() {
@@ -40,7 +37,6 @@ function App() {
   const scrollPositions = useRef<Record<string, number>>({});
   const transitioning = useRef(false);
 
-  // Continuously save scroll position per route (paused during transitions)
   useEffect(() => {
     const path = location.pathname;
     const handler = () => {
@@ -52,13 +48,11 @@ function App() {
     return () => window.removeEventListener('scroll', handler);
   }, [location.pathname]);
 
-  // Sync route → store and restore scroll after animation
   useEffect(() => {
     transitioning.current = true;
     const theme = routeToTheme[location.pathname] || 'landing';
     setTheme(theme);
 
-    // Wait for exit (0.4s) + enter (0.4s) animations to finish
     const path = location.pathname;
     const restoreTimer = setTimeout(() => {
       const saved = scrollPositions.current[path];
@@ -76,26 +70,15 @@ function App() {
 
   return (
     <Suspense fallback={<ThemeLoader />}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <Routes location={location}>
-            <Route path="/" element={<Landing />} />
-            <Route path="/netflix" element={<NetflixTheme />} />
-            <Route path="/terminal" element={<TerminalTheme />} />
-            <Route path="/gpt" element={<GPTTheme />} />
-            <Route path="/instagram" element={<InstagramTheme />} />
-            <Route path="/arcade" element={<ArcadeTheme />} />
-            {/* <Route path="/story" element={<StoryTheme />} /> */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </motion.div>
-      </AnimatePresence>
+      <Routes location={location}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/netflix" element={<NetflixTheme />} />
+        <Route path="/terminal" element={<TerminalTheme />} />
+        <Route path="/gpt" element={<GPTTheme />} />
+        <Route path="/instagram" element={<InstagramTheme />} />
+        <Route path="/games" element={<GamesPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </Suspense>
   );
 }

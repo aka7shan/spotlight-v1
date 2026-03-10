@@ -13,6 +13,8 @@ export interface Project {
   year: string;
   location?: string;
   bullets: string[];
+  github?: string;
+  liveUrl?: string;
 }
 
 export interface Education {

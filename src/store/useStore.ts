@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type ThemeType = 'landing' | 'netflix' | 'instagram' | 'terminal' | 'gpt' | 'arcade' | 'reddit' | 'story';
+export type ThemeType = 'landing' | 'netflix' | 'instagram' | 'terminal' | 'gpt' | 'reddit';
 
 export interface Achievement {
   id: string;
@@ -12,10 +12,16 @@ export interface Achievement {
   unlockedAt?: number;
 }
 
+export type ColorMode = 'dark' | 'light';
+
 interface PortfolioStore {
   // Theme
   currentTheme: ThemeType;
   setTheme: (theme: ThemeType) => void;
+
+  // Color mode
+  colorMode: ColorMode;
+  toggleColorMode: () => void;
 
   // Gamification
   xp: number;
@@ -87,6 +93,12 @@ export const useStore = create<PortfolioStore>()(
         if (newThemesVisited.filter(t => t !== 'landing').length >= 6) {
           get().unlockAchievement('all_themes');
         }
+      },
+
+      // Color mode
+      colorMode: 'dark',
+      toggleColorMode: () => {
+        set({ colorMode: get().colorMode === 'dark' ? 'light' : 'dark' });
       },
 
       // Gamification
@@ -168,12 +180,12 @@ if (hour >= 0 && hour < 5) {
 }
 
 // Console easter egg
-console.log(
-  '%c🚀 Akarshan Sharma — Portfolio',
-  'font-size: 24px; font-weight: bold; color: #e50914; text-shadow: 2px 2px 0 #000;'
-);
-console.log(
-  '%cHey developer! 👋 Like what you see under the hood?\nLet\'s connect: akaxyz@gmail.com\n\nPS: Try the Konami Code on the landing page... ↑↑↓↓←→←→BA',
-  'font-size: 14px; color: #00ff00; background: #111; padding: 10px; border-radius: 5px;'
-);
+// console.log(
+//   '%c🚀 Akarshan Sharma — Portfolio',
+//   'font-size: 24px; font-weight: bold; color: #e50914; text-shadow: 2px 2px 0 #000;'
+// );
+// console.log(
+//   '%cHey developer! 👋 Like what you see under the hood?\nLet\'s connect: akaxyz@gmail.com\n\nPS: Try the Konami Code on the landing page... ↑↑↓↓←→←→BA',
+//   'font-size: 14px; color: #00ff00; background: #111; padding: 10px; border-radius: 5px;'
+// );
 

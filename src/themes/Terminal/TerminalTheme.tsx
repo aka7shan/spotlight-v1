@@ -498,11 +498,11 @@ export default function TerminalTheme() {
       case 'theme':
         addLines([
           inputLine,
-          { type: 'output', content: 'Available themes: netflix, instagram, terminal, gpt, arcade' },
+          { type: 'output', content: 'Available themes: netflix, instagram, terminal, gpt' },
           { type: 'output', content: 'Usage: theme <name> or type "exit" to go back to selector' },
           { type: 'output', content: '' },
         ]);
-        if (args && ['netflix', 'instagram', 'gpt', 'arcade'].includes(args)) {
+        if (args && ['netflix', 'instagram', 'gpt'].includes(args)) {
           routerNavigate(`/${args}`);
         }
         break;
